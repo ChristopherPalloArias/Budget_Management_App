@@ -34,10 +34,10 @@ Given our 2.5-day constraint, we adapt Scrum to micro-sprints:
 - **Monitoring:** Track app performance and errors from day one
 
 #### **AI Integration**
-- GitHub Copilot and Open Code as team members
+- GitHub Copilot and Open Code as Junior Developer member of our team
 - Apply prompt engineering best practices https://docs.github.com/es/copilot/concepts/prompting/prompt-engineering
-- Validate all AI-generated outputs
-- Document AI interactions for team learning
+- Ethics and Quality Standards (detailed in section 5)
+- Document AI interactions for team learning in PROMPT_DOCUMENTATION.md
 
 ---
 
@@ -75,11 +75,14 @@ Maintain these key documents in the repository:
 ```
 📁 majoymajo/Taller_Diagnostico
 ├── 📄 README.md                    → Project overview, setup, installation
-├── 📄 AI_INTERACTION_PROTOCOL.md   → This document
+├── 📄 AI_Workflow.md   → This document
 ├── 📄 ARCHITECTURE.md              → System design, tech stack, structure
-├── 📄 API_DOCUMENTATION.md         → API endpoints (if applicable)
+├── 📄 PROMPT_DOCUMENTATION.md      → Prompts used on each role
+    ├──Front-End.md
+    ├──Back-End.md
+    ├── QA.md
+├── 📄 TEST.md                      → Testing strategy and commands
 ├── 📄 DEPLOYMENT.md                → Deployment process and environments
-├── 📄 TESTING_GUIDE.md             → Testing strategy and commands
 
 
 ```
@@ -223,7 +226,7 @@ Our 2.5-day project follows these phases:
 ---
 #### **Knowledge Sharing**
 - **Daily 2-hour meetings** scheduled through Teams
-- **Real-time documentation** of effective prompts in PROMPT_LIBRARY.md
+- **Real-time documentation** of effective prompts in PROMPT_DOCUMENTATION.md
 - **End-of-project retrospective** capturing lessons learned
 
 ## 5. Quality Standards & Ethics
