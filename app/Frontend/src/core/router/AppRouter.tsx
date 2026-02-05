@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { DashboardLayout } from '../../shared/layouts/DashboardLayout';
 import { LoginPage } from '../../modules/auth/pages/LoginPage';
+import { RegisterPage } from '../../modules/auth/pages/RegisterPage';
 
 /**
  * Temporary placeholder components
@@ -60,7 +61,7 @@ export const AppRouter = () => {
                 <Route element={<PublicLayout />}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<div>Register Page (TODO)</div>} />
+                    <Route path="/register" element={<RegisterPage />} />
                 </Route>
 
                 {/* Protected Routes */}

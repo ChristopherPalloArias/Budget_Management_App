@@ -15,7 +15,4 @@ export const loginSchema = z.object({
         .max(100, 'La contraseña es demasiado larga'),
 });
 
-/**
- * Type inference from schema
- */
 export type LoginFormData = z.infer<typeof loginSchema>;

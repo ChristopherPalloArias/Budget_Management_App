@@ -3,20 +3,14 @@ import { devtools, persist } from 'zustand/middleware';
 import { type User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../../core/config/firebase.config.js';
 
-/**
- * User State Interface
- */
 interface UserState {
-    // User data
     user: FirebaseUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
 
-    // Actions
     setUser: (user: FirebaseUser | null) => void;
     logout: () => void;
 
-    // Initialize listener
     initAuthListener: () => void;
 }
 
@@ -28,12 +22,10 @@ export const useUserStore = create<UserState>()(
     devtools(
         persist(
             (set, get) => ({
-                // Initial state
                 user: null,
                 isAuthenticated: false,
                 isLoading: true,
 
-                // Set user from Firebase
                 setUser: (user) =>
                     set({
                         user,
@@ -41,7 +33,6 @@ export const useUserStore = create<UserState>()(
                         isLoading: false,
                     }),
 
-                // Logout
                 logout: async () => {
                     try {
                         await auth.signOut();
@@ -51,7 +42,6 @@ export const useUserStore = create<UserState>()(
                     }
                 },
 
-                // Initialize Firebase Auth Listener
                 initAuthListener: () => {
                     onAuthStateChanged(auth, (user) => {
                         get().setUser(user);
@@ -59,9 +49,8 @@ export const useUserStore = create<UserState>()(
                 },
             }),
             {
-                name: 'user-storage', // localStorage key
+                name: 'user-storage',
                 partialize: (state) => ({
-                    // Only persist these fields
                     user: state.user ? {
                         uid: state.user.uid,
                         email: state.user.email,
@@ -75,5 +64,4 @@ export const useUserStore = create<UserState>()(
     )
 );
 
-// Initialize auth listener on module load
 useUserStore.getState().initAuthListener();

@@ -1,8 +1,3 @@
-/**
- * Auth Module
- * Exports for authentication functionality
- */
-
 export { useUserStore } from './store/useUserStore.ts';
 
 // Services

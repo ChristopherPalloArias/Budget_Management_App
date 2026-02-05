@@ -27,16 +27,12 @@ export const LoginForm = () => {
         resolver: zodResolver(loginSchema),
     });
 
-    /**
-     * Handle email/password login
-     */
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
         setError(null);
 
         try {
             await loginWithEmail(data.email, data.password);
-            // User state is automatically updated by useUserStore listener
             navigate('/dashboard');
         } catch (err: any) {
             setError(err.message);
@@ -45,9 +41,6 @@ export const LoginForm = () => {
         }
     };
 
-    /**
-     * Handle Google login
-     */
     const handleGoogleLogin = async () => {
         setIsGoogleLoading(true);
         setError(null);
