@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { DashboardLayout } from '../../shared/layouts/DashboardLayout';
+import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
+import { PublicRoute } from '../../shared/components/PublicRoute';
 import { LoginPage } from '../../modules/auth/pages/LoginPage';
 import { RegisterPage } from '../../modules/auth/pages/RegisterPage';
 
@@ -49,30 +51,29 @@ const DashboardHome = () => (
     </div>
 );
 
-/**
- * App Router
- * Main routing configuration with public and protected routes
- */
 export const AppRouter = () => {
     return (
         <BrowserRouter>
             <Routes>
                 {/* Public Routes */}
-                <Route element={<PublicLayout />}>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
+                <Route element={<PublicRoute />}>
+                    <Route element={<PublicLayout />}>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/register" element={<RegisterPage />} />
+                    </Route>
                 </Route>
 
                 {/* Protected Routes */}
-                <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<DashboardHome />} />
-                    <Route path="/transactions" element={<div>Transactions Module (TODO)</div>} />
-                    <Route path="/budgets" element={<div>Budgets Module (TODO)</div>} />
-                    <Route path="/reports" element={<div>Reports Module (TODO)</div>} />
+                <Route element={<ProtectedRoute />}>
+                    <Route element={<DashboardLayout />}>
+                        <Route path="/dashboard" element={<DashboardHome />} />
+                        <Route path="/transactions" element={<div>Transactions Module (TODO)</div>} />
+                        <Route path="/budgets" element={<div>Budgets Module (TODO)</div>} />
+                        <Route path="/reports" element={<div>Reports Module (TODO)</div>} />
+                    </Route>
                 </Route>
 
-                {/* Catch all - redirect to home */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>

@@ -90,40 +90,75 @@ Actúa como Senior Frontend Developer. Tu objetivo es implementar el flujo de Au
 ---
 
 # ROLE
-Actúa como Senior Frontend Developer. Tu objetivo es implementar el flujo de Registro de Usuarios (Sign Up) dentro del módulo de autenticación (`src/modules/auth`) en `app/frontend`.
+Actúa como Senior Frontend Developer. Tu objetivo es implementar el flujo de Registro de Usuarios (Sign Up) dentro del módulo de autenticación (src/modules/auth) en app/frontend.
 
 # CONTEXTO DEL SISTEMA
 - Arquitectura: Modular por dominios.
 - Autenticación: Firebase Auth.
-- Estado: Zustand (`src/modules/auth/store/useUserStore.ts`).
+- Estado: Zustand (src/modules/auth/store/useUserStore.ts).
 - Validación: React Hook Form + Zod.
 - UI: Componentes de shadcn/ui.
 
 # TAREAS ESPECÍFICAS (Flujo de Registro)
 
 1. AMPLIACIÓN DEL SERVICIO (API/Firebase):
-   - Actualiza `src/modules/auth/services/authService.ts`.
-   - Implementa la función `registerWithEmail`: debe crear el usuario en Firebase, actualizar el perfil (displayName) y sincronizar el `useUserStore`.
+   - Actualiza src/modules/auth/services/authService.ts.
+   - Implementa la función registerWithEmail: debe crear el usuario en Firebase, actualizar el perfil (displayName) y sincronizar el useUserStore.
    - Implementa manejo de errores específicos de Firebase (ej: email-already-in-use).
 
 2. COMPONENTES DE INTERFAZ (UI):
-   - Crea `src/modules/auth/components/RegisterForm.tsx`.
+   - Crea src/modules/auth/components/RegisterForm.tsx.
    - Requisitos del formulario: Nombre completo, Email, Password y Confirmar Password.
    - Esquema Zod: Validar que las contraseñas coincidan y que tengan un mínimo de 8 caracteres.
    - Estilo: Mantener consistencia visual con el LoginForm.
 
 3. PÁGINA DE REGISTRO:
-   - Crea `src/modules/auth/pages/RegisterPage.tsx`.
+   - Crea src/modules/auth/pages/RegisterPage.tsx.
    - Debe incluir un enlace para redirigir a los usuarios que ya tienen cuenta hacia la página de Login.
 
 4. INTEGRACIÓN DE RUTAS:
-   - Registrar `RegisterPage.tsx` en `src/core/router/AppRouter.tsx` dentro del grupo de rutas públicas.
+   - Registrar RegisterPage.tsx en src/core/router/AppRouter.tsx dentro del grupo de rutas públicas.
 
 # REQUISITOS DE CALIDAD
 - Mantener la lógica de negocio separada de la UI (Separation of Concerns).
 - Uso estricto de TypeScript para los retornos del servicio de Firebase.
 
 # FORMATO DE SALIDA
-1. Código actualizado de `authService.ts` (solo la función nueva).
-2. Código de `RegisterForm.tsx` con su esquema Zod.
-3. Código de `RegisterPage.tsx`.
+1. Código actualizado de authService.ts (solo la función nueva).
+2. Código de RegisterForm.tsx con su esquema Zod.
+3. Código de RegisterPage.tsx.
+
+---
+
+# ROLE
+Actúa como Senior Frontend Engineer. Tu objetivo es implementar la lógica de protección de rutas (Auth Guard) utilizando el estado de Firebase y Zustand dentro de la arquitectura modular.
+
+# CONTEXTO TÉCNICO
+- Estado Global: useUserStore.ts (Zustand) que contiene el objeto user y un booleano isLoading.
+- Router: React Router DOM v6+.
+- Ubicación: El componente debe residir en src/shared/components/ProtectedRoute.tsx.
+
+# TAREAS ESPECÍFICAS
+
+1. HOOK DE SESIÓN:
+   - Crea un hook en src/shared/hooks/useAuthStatus.ts que escuche el estado de useUserStore.
+   - El hook debe retornar { isAuthenticated, isChecking }.
+
+2. COMPONENTE PROTECTED ROUTE:
+   - Crea un componente ProtectedRoute que envuelva las rutas privadas.
+   - LÓGICA: 
+     - Si isChecking es true, muestra un componente de "Loading" (puedes usar un Skeleton de shadcn o un spinner simple).
+     - Si el usuario NO está autenticado, redirige a /login usando el componente <Navigate /> de React Router.
+     - Si está autenticado, renderiza los children o un <Outlet />.
+
+3. INTEGRACIÓN EN EL ROUTER:
+   - Actualiza src/core/router/AppRouter.tsx para envolver todas las rutas del Dashboard (ingresos, gastos, presupuestos) con este nuevo ProtectedRoute.
+
+# REQUISITOS DE CALIDAD
+- No hardcodear la redirección; usa una constante de rutas si existe.
+- Asegúrate de que no haya "flashes" de contenido protegido mientras Firebase inicializa (manejo correcto del estado loading).
+
+# FORMATO DE SALIDA
+1. Código de useAuthStatus.ts.
+2. Código de ProtectedRoute.tsx.
+3. Ejemplo de cómo aplicarlo en el AppRouter.tsx.
