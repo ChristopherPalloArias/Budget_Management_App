@@ -210,7 +210,7 @@ Our 2.5-day project follows these phases:
 
 **AI Interaction Focus:**
 - Documentation finalization
-- Deployment scripts
+- Deployment-Github actions
 - Troubleshooting
 
 **Deliverables:**
@@ -222,18 +222,15 @@ Our 2.5-day project follows these phases:
 
 ---
 #### **Knowledge Sharing**
-- **Daily 2-hour meetings** with structured prompt engineering focus
+- **Daily 2-hour meetings** scheduled through Teams
 - **Real-time documentation** of effective prompts in PROMPT_LIBRARY.md
-- **Shared learning log** in DAILY_MEETING_NOTES.md
 - **End-of-project retrospective** capturing lessons learned
 
 ## 5. Quality Standards & Ethics
 
 ### A. Code Quality Requirements
 - **All AI-generated code must be reviewed** by at least one human
-- **All AI-generated code must have tests** with minimum 70% coverage
 - **All AI-generated code must be understood** by the team member integrating it
-- **Follow project coding standards** and linting rules
 - **No hardcoded secrets or sensitive data**
 
 ### B. Ethical Guidelines
@@ -260,7 +257,7 @@ Our 2.5-day project follows these phases:
 
 ## 6. Metrics & Continuous Improvement
 
-### A. Track These Metrics
+### A.  Metrics
 - ⏱️ Time saved per AI interaction
 - 🐛 Bugs introduced by AI-generated code vs. human code
 - ✅ Successful vs. unsuccessful AI interactions
@@ -270,7 +267,6 @@ Our 2.5-day project follows these phases:
 
 ### B. Post-Project Review
 After 2-day project completion:
-- Compile comprehensive lessons learned
 - Identify most/least effective AI use cases
 - Document best prompt patterns
 - Calculate overall time saved
@@ -281,7 +277,6 @@ After 2-day project completion:
 ## 7. Resources & References
 
 ### Prompt Engineering Resources
-- [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)
 - [GitHub Copilot Best Practices](https://docs.github.com/en/copilot/using-github-copilot/best-practices-for-using-github-copilot)
 - [Anthropic Prompt Library](https://docs.anthropic.com/claude/prompt-library)
 
