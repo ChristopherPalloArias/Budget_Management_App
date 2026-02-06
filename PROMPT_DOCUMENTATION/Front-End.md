@@ -235,3 +235,43 @@ Actúa como Senior Frontend Engineer experto en Clean Architecture. Tu objetivo 
 1. Código de los Types (Interfaces).
 2. Código del Adaptador (Mapper).
 3. Código del Servicio y el Hook.
+
+--- 
+
+# ROLE
+Actúa como Senior Frontend Developer experto en Diseño de Sistemas. Tu objetivo es implementar la interfaz completa del CRUD de transacciones en el módulo src/modules/transactions usando shadcn/ui.
+
+# CONTEXTO TÉCNICO
+- Arquitectura: Modular.
+- UI: shadcn/ui (Data Table, Dialog, Form, Toast).
+- Estado: Zustand para el estado local y TanStack Query para la sincronización con el servidor.
+- Backend: Los datos vienen del backend-api (Producer).
+
+# TAREAS ESPECÍFICAS (UI CRUD)
+
+1. DATA TABLE (Visualización):
+   - Crea src/modules/transactions/components/TransactionTable.tsx utilizando el componente DataTable de shadcn.
+   - Columnas: Fecha, Concepto, Categoría (Badge), Monto (con formato de moneda y color: rojo para egreso, verde para ingreso) y Acciones.
+
+2. FORMULARIO DE EDICIÓN (Modal):
+   - Crea src/modules/transactions/components/TransactionForm.tsx.
+   - Debe ser un formulario reutilizable tanto para "Crear" como para "Editar".
+   - Campos: Monto, Tipo (Ingreso/Egreso), Categoría (Select), Fecha (DatePicker) y Descripción.
+
+3. ACCIONES CRUD (Modales y Alertas):
+   - Implementa un DropdownMenu en cada fila para "Editar" y "Eliminar".
+   - El botón "Eliminar" debe disparar un AlertDialog de confirmación.
+   - El botón "Editar" debe abrir un Dialog (Modal) con el formulario precargado.
+
+4. NOTIFICACIONES:
+   - Usa el hook useToast de shadcn para confirmar cuando una transacción ha sido modificada o eliminada exitosamente.
+
+# REQUISITOS DE CALIDAD
+- No escribas lógica de API aquí; usa placeholders para las mutaciones de TanStack Query (ej. useMutation).
+- Asegúrate de que el diseño sea Responsive (apilar columnas en móviles si es necesario).
+- Accesibilidad: Los modales deben poder cerrarse con la tecla ESC y tener el foco correcto.
+
+# FORMATO DE SALIDA
+1. Código de columns.tsx (Definición de columnas de la tabla).
+2. Código de TransactionTable.tsx.
+3. Código de TransactionForm.tsx (con Zod).
