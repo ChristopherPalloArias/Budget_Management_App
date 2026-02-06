@@ -1,4 +1,4 @@
-import { useUserStore } from '../../modules/auth/store/useUserStore.ts';
+import { useUserStore } from '../store/useUserStore.ts';
 
 export const useAuthStatus = () => {
     const isAuthenticated = useUserStore((state) => state.isAuthenticated);

@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { DashboardLayout } from '../../shared/layouts/DashboardLayout';
-import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
-import { PublicRoute } from '../../shared/components/PublicRoute';
+import { ProtectedRoute, PublicRoute } from '../../modules/auth';
 import { LoginPage } from '../../modules/auth/pages/LoginPage';
 import { RegisterPage } from '../../modules/auth/pages/RegisterPage';
 
