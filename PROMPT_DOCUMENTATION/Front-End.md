@@ -136,7 +136,7 @@ Actúa como Senior Frontend Engineer. Tu objetivo es implementar la lógica de p
 # CONTEXTO TÉCNICO
 - Estado Global: useUserStore.ts (Zustand) que contiene el objeto user y un booleano isLoading.
 - Router: React Router DOM v6+.
-- Ubicación: El componente debe residir en src/shared/components/ProtectedRoute.tsx.
+- Ubicación: El componente debe residir en src/modules/auth/components/ProtectedRoute.tsx.
 
 # TAREAS ESPECÍFICAS
 
@@ -164,6 +164,40 @@ Actúa como Senior Frontend Engineer. Tu objetivo es implementar la lógica de p
 3. Ejemplo de cómo aplicarlo en el AppRouter.tsx.
 
 ---
+
+# ROLE
+Actúa como Senior Frontend Engineer. Tu objetivo es evitar que usuarios ya autenticados accedan a las páginas de Login o Registro, redirigiéndolos automáticamente al Dashboard.
+
+# CONTEXTO TÉCNICO
+- Estado Global: useUserStore.ts (Zustand).
+- Router: React Router DOM.
+- Ubicación: Crea src/modules/auth/components/PublicRoute.tsx.
+
+# TAREAS ESPECÍFICAS
+
+1. COMPONENTE PUBLIC ROUTE (GUEST GUARD):
+   - Crea un componente llamado PublicRoute.
+   - LÓGICA:
+     - Consume el estado user e isLoading de useUserStore.
+     - Si isLoading es true, muestra el componente de "Loading" (para evitar saltos visuales).
+     - Si el usuario YA está autenticado (user !== null), redirige inmediatamente a /dashboard usando <Navigate to="/dashboard" replace />.
+     - Si el usuario NO está autenticado, renderiza los children o el <Outlet />.
+
+2. REFACTORIZACIÓN DEL ROUTER:
+   - Actualiza src/core/router/AppRouter.tsx.
+   - Envuelve las rutas públicas (Login, Landing, Registro) con este nuevo PublicRoute.
+
+# REQUISITOS DE CALIDAD
+- Usa el flag replace en el componente Maps para que la página de login no quede en el historial de navegación.
+- Mantén la coherencia con el componente ProtectedRoute creado anteriormente.
+- Sigue la metodología AI-First: genera el código optimizado para que el QA Engineer valide que no se puede "volver atrás" al login tras loguearse.
+
+# FORMATO DE SALIDA
+1. Código de PublicRoute.tsx.
+2. Ejemplo de implementación en AppRouter.tsx mostrando la diferencia entre rutas protegidas y rutas solo para invitados.
+
+---
+
 # Dashboard
 
 # ROLE
@@ -204,6 +238,7 @@ Actúa como Senior Frontend Architect. Tu objetivo es construir el LAYOUT del Da
 ---
 
 # ROLE
+
 Actúa como Senior Frontend Engineer. Tu objetivo es construir el componente NavHeader.tsx en src/shared/layouts/components/, integrando navegación inteligente y controles de sistema.
 
 # CONTEXTO TÉCNICO
@@ -243,3 +278,87 @@ Actúa como Senior Frontend Engineer. Tu objetivo es construir el componente Nav
 1. Código de NavHeader.tsx.
 2. Código de un subcomponente CommandMenu.tsx (si aplica).
 3. Código del ThemeToggle.tsx.
+
+---
+
+# ROLE
+
+Actúa como Senior Frontend Engineer experto en Clean Architecture. Tu objetivo es implementar la infraestructura del módulo de Transacciones en src/modules/transactions basándote en un JSON de respuesta del backend, pero aplicando un Patrón Adaptador (Mapper).
+
+# CONTEXTO TÉCNICO
+- Dominio: Gestión de Ingresos y Gastos.
+- Backend Response (JSON):
+  { "reportId": 3, "userId": "user", "period": "2026-02", "totalIncome": 1000.0, "totalExpense": 0.0, "balance": 1000.0, "createdAt": "...", "updatedAt": "..." }
+
+# TAREAS ESPECÍFICAS
+
+1. DEFINICIÓN DE MODELOS (Interfaces):
+   - Crea src/modules/transactions/types/transaction.types.ts.
+   - Define la interfaz TransactionResponse (exactamente como viene del JSON).
+   - Define la interfaz TransactionModel como queremos que se use en el frontend, ej: camelCase o nombres más semánticos en inglés.
+
+2. PATRÓN ADAPTADOR (Mapper):
+   - Crea src/modules/transactions/adapters/transaction.adapter.ts.
+   - Implementa una función transactionAdapter que transforme el objeto del backend (TransactionResponse) al modelo del frontend (TransactionModel).
+   - Asegúrate de manejar valores por defecto (null-safety) y formatear las fechas si es necesario.
+
+3. SERVICIO DE API (Axios + TanStack Query):
+   - Crea src/modules/transactions/services/transactionService.ts usando la instancia de httpClient ya configurada.
+   - Implementa la petición GET. La función debe aplicar el adaptador inmediatamente después de recibir la respuesta: .then(res => transactionAdapter(res.data)).
+
+4. HOOK DE DATOS:
+   - Crea src/modules/transactions/hooks/useGetTransactions.ts usando useQuery de TanStack Query para consumir el servicio.
+
+5. ESTADO GLOBAL (Zustand):
+   - Crea src/modules/transactions/store/useTransactionStore.ts por si necesitamos almacenar el último reporte consultado de forma global.
+
+# REQUISITOS DE CALIDAD
+- No implementes UI todavía, solo la lógica de datos y adaptadores.
+- Sigue el principio de "Single Source of Truth": el componente solo debe conocer el TransactionModel, nunca el JSON crudo del backend.
+
+# FORMATO DE SALIDA
+1. Código de los Types (Interfaces).
+2. Código del Adaptador (Mapper).
+3. Código del Servicio y el Hook.
+
+--- 
+
+# ROLE
+Actúa como Senior Frontend Developer experto en Diseño de Sistemas. Tu objetivo es implementar la interfaz completa del CRUD de transacciones en el módulo src/modules/transactions usando shadcn/ui.
+
+# CONTEXTO TÉCNICO
+- Arquitectura: Modular.
+- UI: shadcn/ui (Data Table, Dialog, Form, Toast).
+- Estado: Zustand para el estado local y TanStack Query para la sincronización con el servidor.
+- Backend: Los datos vienen del backend-api (Producer).
+
+# TAREAS ESPECÍFICAS (UI CRUD)
+
+1. DATA TABLE (Visualización):
+   - Crea src/modules/transactions/components/TransactionTable.tsx utilizando el componente DataTable de shadcn.
+   - Columnas: Fecha, Concepto, Categoría (Badge), Monto (con formato de moneda y color: rojo para egreso, verde para ingreso) y Acciones.
+
+2. FORMULARIO DE EDICIÓN (Modal):
+   - Crea src/modules/transactions/components/TransactionForm.tsx.
+   - Debe ser un formulario reutilizable tanto para "Crear" como para "Editar".
+   - Campos: Monto, Tipo (Ingreso/Egreso), Categoría (Select), Fecha (DatePicker) y Descripción.
+
+3. ACCIONES CRUD (Modales y Alertas):
+   - Implementa un DropdownMenu en cada fila para "Editar" y "Eliminar".
+   - El botón "Eliminar" debe disparar un AlertDialog de confirmación.
+   - El botón "Editar" debe abrir un Dialog (Modal) con el formulario precargado.
+
+4. NOTIFICACIONES:
+   - Usa el hook useToast de shadcn para confirmar cuando una transacción ha sido modificada o eliminada exitosamente.
+
+# REQUISITOS DE CALIDAD
+- No escribas lógica de API aquí; usa placeholders para las mutaciones de TanStack Query (ej. useMutation).
+- Asegúrate de que el diseño sea Responsive (apilar columnas en móviles si es necesario).
+- Accesibilidad: Los modales deben poder cerrarse con la tecla ESC y tener el foco correcto.
+
+# FORMATO DE SALIDA
+1. Código de columns.tsx (Definición de columnas de la tabla).
+2. Código de TransactionTable.tsx.
+3. Código de TransactionForm.tsx (con Zod).
+
+
