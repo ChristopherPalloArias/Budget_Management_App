@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.microservice.report.dto.ReportSummary;
+import com.microservice.report.exception.ReportNotFoundException;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,26 +22,32 @@ import com.microservice.report.service.ReportService;
 public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepository;
 
+    private Report getOrCreateReport(TransactionMessage transactionMessage) {
+        String userId = transactionMessage.getUserId();
+        String period = transactionMessage.getDate()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        return reportRepository.findByUserIdAndPeriod(userId, period)
+                .orElseGet(() -> reportRepository.save(
+                        Report.builder()
+                                .userId(userId)
+                                .period(period)
+                                .totalIncome(BigDecimal.ZERO)
+                                .totalExpense(BigDecimal.ZERO)
+                                .balance(BigDecimal.ZERO)
+                                .build()
+                ));
+    }
+
     @Transactional
     @Override
     public void updateReport(TransactionMessage transactionMessage) {
-        if (transactionMessage == null ||
-                transactionMessage.getAmount() == null ||
-                transactionMessage.getType() == null ||
-                transactionMessage.getUserId() == null ||
-                transactionMessage.getDate() == null) {
-            return;
-        }
-        // Obtener o crear el reporte específico del usuario y período
         Report report = getOrCreateReport(transactionMessage);
         BigDecimal amount = transactionMessage.getAmount();
-        // Actualizar según el tipo de transacción
         if (transactionMessage.getType() == TransactionType.INCOME) {
             report.setTotalIncome(report.getTotalIncome().add(amount));
         } else if (transactionMessage.getType() == TransactionType.EXPENSE) {
             report.setTotalExpense(report.getTotalExpense().add(amount));
         }
-        // Calcular el balance
         report.setBalance(report.getTotalIncome().subtract(report.getTotalExpense()));
         reportRepository.save(report);
     }
@@ -49,31 +56,13 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public Report getReport(String userId, String period) {
         return reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElse(null);
+                .orElseThrow(() -> new ReportNotFoundException(userId, period));
     }
 
     @Transactional
     @Override
     public List<Report> getReportsByUserId(String userId) {
         return reportRepository.findByUserId(userId);
-    }
-
-    private Report getOrCreateReport(TransactionMessage transactionMessage) {
-        String userId = transactionMessage.getUserId();
-        String period = transactionMessage.getDate()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        return reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseGet(() -> {
-                    return reportRepository.save(
-                            Report.builder()
-                                    .userId(userId)
-                                    .period(period)
-                                    .totalIncome(BigDecimal.ZERO)
-                                    .totalExpense(BigDecimal.ZERO)
-                                    .balance(BigDecimal.ZERO)
-                                    .build()
-                    );
-                });
     }
 
     @Transactional

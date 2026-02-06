@@ -32,21 +32,4 @@ public class TransactionServiceImpl implements TransactionService {
     public List<Transaction> getAll() {
         return transactionRepository.findAll();
     }
-
-    @Override
-    public Transaction update(Integer id, Transaction transaction) {
-        Transaction existing = transactionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found with id " + id));
-        existing.setAmount(transaction.getAmount());
-        existing.setCategory(transaction.getCategory());
-        existing.setDate(transaction.getDate());
-        existing.setDescription(transaction.getDescription());
-        existing.setType(transaction.getType());
-        return transactionRepository.save(existing);
-    }
-
-    @Override
-    public void delete(Integer id) {
-        transactionRepository.deleteById(id);
-    }
 }

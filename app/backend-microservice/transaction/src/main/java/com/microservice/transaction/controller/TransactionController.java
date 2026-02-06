@@ -36,17 +36,4 @@ public class TransactionController {
     public ResponseEntity<List<Transaction>> getAll() {
         return ResponseEntity.ok(transactionService.getAll());
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Transaction> update(@PathVariable Integer id, @Valid @RequestBody Transaction transaction) {
-        Transaction updated = transactionService.update(id, transaction);
-        transactionMessageProducer.sendUpdated(updated);
-        return ResponseEntity.ok(updated);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        transactionService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
 }

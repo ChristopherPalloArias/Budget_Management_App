@@ -20,12 +20,6 @@ public class ReportController {
     public ResponseEntity<Report> getReport(
             @PathVariable String userId,
             @RequestParam(required = false) String period) {
-        if (period == null) {
-            List<Report> reports = reportService.getReportsByUserId(userId);
-            return reports.isEmpty()
-                    ? ResponseEntity.notFound().build()
-                    : ResponseEntity.ok(reports.get(0));
-        }
         Report report = reportService.getReport(userId, period);
         return report != null ? ResponseEntity.ok(report) : ResponseEntity.notFound().build();
     }
