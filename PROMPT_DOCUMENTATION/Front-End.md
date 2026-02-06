@@ -162,3 +162,41 @@ Actúa como Senior Frontend Engineer. Tu objetivo es implementar la lógica de p
 1. Código de useAuthStatus.ts.
 2. Código de ProtectedRoute.tsx.
 3. Ejemplo de cómo aplicarlo en el AppRouter.tsx.
+
+---
+# Dashboard
+
+# ROLE
+Actúa como Senior Frontend Architect. Tu objetivo es construir el LAYOUT del Dashboard para la aplicación de Finanzas Personales, integrando el componente oficial de SHADCN SIDEBAR.
+
+# CONTEXTO TÉCNICO
+- Arquitectura: Modular. El layout vive en src/shared/layouts.
+- Componentes Base: Ya se ha ejecutado pnpm dlx shadcn@latest add sidebar. Debes usar los componentes de src/components/ui/sidebar.tsx.
+- Estado: El Sidebar debe integrarse con SidebarProvider.
+- Iconos: Lucide React.
+
+# TAREAS ESPECÍFICAS
+
+1. COMPONENTE APP-SIDEBAR:
+   - Crea src/shared/layouts/components/AppSidebar.tsx utilizando la estructura oficial de shadcn (Sidebar, SidebarContent, SidebarGroup, SidebarMenu, etc.).
+   - Navegación Principal: "Inicio", "Transacciones", "Reportes", "Configuración".
+   - Footer del Sidebar: Incluye un componente NavUser.tsx que muestre los datos del usuario desde useUserStore.
+
+2. COMPONENTE HEADER:
+   - Crea src/shared/layouts/components/DashboardHeader.tsx.
+   - Debe incluir el SidebarTrigger (para colapsar/expandir), un Breadcrumb dinámico y un buscador (Input).
+
+3. LAYOUT MAESTRO (DashboardLayout.tsx):
+   - Actualiza src/shared/layouts/DashboardLayout.tsx.
+   - Envuelve toda la estructura en el SidebarProvider.
+   - Implementa el AppSidebar y el DashboardHeader.
+   - El área principal debe tener un fondo bg-muted/50 y utilizar el componente <Outlet /> de react-router-dom para renderizar el contenido de los módulos.
+
+# REQUISITOS DE CALIDAD
+- No crees lógica de colapsado manual; usa las propiedades nativas de shadcn sidebar.
+- Asegura que el layout sea totalmente responsivo (el sidebar debe convertirse automáticamente en un Drawer móvil).
+
+# FORMATO DE SALIDA
+1. Código de AppSidebar.tsx y NavUser.tsx.
+2. Código de DashboardHeader.tsx.
+3. Código final de DashboardLayout.tsx integrando el SidebarProvider.
