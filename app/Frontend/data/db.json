@@ -1,0 +1,94 @@
+{
+  "transactions": [
+    {
+      "transactionId": 1,
+      "userId": "user123",
+      "amount": 15000,
+      "type": "INCOME",
+      "category": "Salario",
+      "description": "Salario mensual",
+      "date": "2026-02-01T10:00:00.000Z"
+    },
+    {
+      "transactionId": 2,
+      "userId": "user123",
+      "amount": 850.5,
+      "type": "EXPENSE",
+      "category": "Alimentación",
+      "description": "Supermercado Exito",
+      "date": "2026-02-03T15:30:00.000Z"
+    },
+    {
+      "transactionId": 3,
+      "userId": "user123",
+      "amount": 1200,
+      "type": "EXPENSE",
+      "category": "Vivienda",
+      "description": "Pago de arriendo",
+      "date": "2026-02-05T09:00:00.000Z"
+    },
+    {
+      "transactionId": 4,
+      "userId": "user123",
+      "amount": 500,
+      "type": "INCOME",
+      "category": "Negocio",
+      "description": "Proyecto freelance",
+      "date": "2026-02-07T14:20:00.000Z"
+    },
+    {
+      "transactionId": 5,
+      "userId": "user123",
+      "amount": 75,
+      "type": "EXPENSE",
+      "category": "Transporte",
+      "description": "Recarga TransMilenio",
+      "date": "2026-02-08T07:45:00.000Z"
+    },
+    {
+      "transactionId": 6,
+      "userId": "user123",
+      "amount": 350,
+      "type": "EXPENSE",
+      "category": "Salud",
+      "description": "Consulta médica",
+      "date": "2026-02-10T11:15:00.000Z"
+    },
+    {
+      "transactionId": 7,
+      "userId": "user123",
+      "amount": 89.99,
+      "type": "EXPENSE",
+      "category": "Entretenimiento",
+      "description": "Cine y palomitas",
+      "date": "2026-02-12T20:30:00.000Z"
+    },
+    {
+      "transactionId": 8,
+      "userId": "user123",
+      "amount": 45000,
+      "type": "INCOME",
+      "category": "Inversiones",
+      "description": "Retorno de inversión",
+      "date": "2026-02-15T16:45:00.000Z"
+    },
+    {
+      "id": "35e5",
+      "description": "Prueba",
+      "amount": 15,
+      "category": "Transporte",
+      "type": "EXPENSE",
+      "date": "2026-02-15T00:00:00.000Z",
+      "userId": "6XlEBieeEwNC2OHuPlYvKLOFu3r2"
+    },
+    {
+      "id": "6112",
+      "description": "Prueba",
+      "amount": 15,
+      "category": "Transporte",
+      "type": "EXPENSE",
+      "date": "2026-02-06T00:00:00.000Z",
+      "userId": "6XlEBieeEwNC2OHuPlYvKLOFu3r2"
+    }
+  ]
+}
