@@ -694,7 +694,7 @@ jobs:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false  # Deployment disabled - not needed for this project
     permissions:
       contents: read
     environment:
@@ -751,7 +751,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false  # Deployment disabled - not needed for this project
     environment:
       name: production
       url: https://example.com
