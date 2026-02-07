@@ -49,12 +49,14 @@ export function DataTable({ data, onCreateTransaction }: DataTableProps) {
 
   // Get unique categories from data
   const categories = useMemo(() => {
+    if (!Array.isArray(data)) return []
     const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
     return uniqueCategories.sort()
   }, [data])
 
   // Filter data based on all criteria
   const filteredData = useMemo(() => {
+    if (!Array.isArray(data)) return []
     return data.filter(transaction => {
       const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesType = selectedType.size === 0 || selectedType.has(transaction.type)

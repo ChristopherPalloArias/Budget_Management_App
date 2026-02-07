@@ -12,7 +12,7 @@ export const getTransactions = async (period?: string): Promise<TransactionRepor
 export const getTransactionItems = async (period?: string): Promise<TransactionModel[]> => {
     const endpoint = period ? `/transactions?period=${period}` : '/transactions';
     const response = await httpClient.get<TransactionItemResponse[]>(endpoint);
-    return response.data.map(transactionAdapter);
+    return Array.isArray(response.data) ? response.data.map(transactionAdapter) : [];
 };
 
 export const createTransaction = async (data: TransactionFormData): Promise<TransactionModel> => {
