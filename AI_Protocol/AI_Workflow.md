@@ -77,6 +77,8 @@ Maintain these key documents in the repository:
 ├── 📄 README.md                    → Project overview, setup, installation
 ├── 📄 AI_Workflow.md   → This document
 ├── 📄 ARCHITECTURE.md              → System design, tech stack, structure
+  ├── 📄 ARCHITECTURE-Front-End.md  
+  ├── 📄 ARCHITECTURE-Back-End.md             
 ├── 📄 PROMPT_DOCUMENTATION.md      → Prompts used on each role
     ├──Front-End.md
     ├──Back-End.md
