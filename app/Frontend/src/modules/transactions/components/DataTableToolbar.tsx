@@ -12,6 +12,7 @@ interface DataTableToolbarProps {
   onCategoryFilterChange: (values: Set<string>) => void
   categories: string[]
   onResetFilters: () => void
+  onCreateTransaction: () => void
 }
 
 const typeOptions = [
@@ -28,6 +29,7 @@ export function DataTableToolbar({
   onCategoryFilterChange,
   categories,
   onResetFilters,
+  onCreateTransaction,
 }: DataTableToolbarProps) {
   const categoryOptions = categories.map((category) => ({
     label: category,
@@ -63,7 +65,7 @@ export function DataTableToolbar({
           </Button>
         )}
       </div>
-      <Button size="sm" className="h-8 gap-1">
+      <Button size="sm" className="h-8 gap-1" onClick={onCreateTransaction}>
         <Plus className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
           Nueva Transacción

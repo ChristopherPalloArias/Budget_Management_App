@@ -92,6 +92,7 @@ export function TransactionPage() {
       {/* Tabla con paginación y filtrado */}
       <DataTable 
         data={transactions} 
+        onCreateTransaction={() => setIsCreateDialogOpen(true)}
       />
 
       {/* Modal para crear transacción */}

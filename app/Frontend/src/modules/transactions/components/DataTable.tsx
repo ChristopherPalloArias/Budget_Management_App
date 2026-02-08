@@ -37,9 +37,10 @@ const getCategoryColor = (category: string) => {
 
 interface DataTableProps {
   data: TransactionModel[]
+  onCreateTransaction: () => void
 }
 
-export function DataTable({ data }: DataTableProps) {
+export function DataTable({ data, onCreateTransaction }: DataTableProps) {
   const [pageIndex, setPageIndex] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedType, setSelectedType] = useState<Set<string>>(new Set())
@@ -48,12 +49,14 @@ export function DataTable({ data }: DataTableProps) {
 
   // Get unique categories from data
   const categories = useMemo(() => {
+    if (!Array.isArray(data)) return []
     const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
     return uniqueCategories.sort()
   }, [data])
 
   // Filter data based on all criteria
   const filteredData = useMemo(() => {
+    if (!Array.isArray(data)) return []
     return data.filter(transaction => {
       const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesType = selectedType.size === 0 || selectedType.has(transaction.type)
@@ -121,6 +124,7 @@ export function DataTable({ data }: DataTableProps) {
         onCategoryFilterChange={handleCategoryFilterChange}
         categories={categories}
         onResetFilters={handleResetFilters}
+        onCreateTransaction={onCreateTransaction}
       />
 
       <Table>

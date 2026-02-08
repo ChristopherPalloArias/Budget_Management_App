@@ -2,7 +2,7 @@
 **Project:** Budget Management App 
 **Team:** Jacob,Majo,Agus 
 **Duration:** 2.5 days  
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-06
 
 ---
 
@@ -16,7 +16,6 @@ Given our 2.5-day constraint, we adapt Scrum to micro-sprints:
 
 - **Sprint Duration:** 1 day per sprint (2 total sprints)
 - **Daily Standup:** 2-3 hour daily meeting (detailed structure in Section 4)
-
 **Day 1 Sprint Goals:**
 - Project setup and architecture
 - Time planning and structure of the project
@@ -77,6 +76,8 @@ Maintain these key documents in the repository:
 ├── 📄 README.md                    → Project overview, setup, installation
 ├── 📄 AI_Workflow.md   → This document
 ├── 📄 ARCHITECTURE.md              → System design, tech stack, structure
+  ├── 📄 ARCHITECTURE-Front-End.md  
+  ├── 📄 ARCHITECTURE-Back-End.md             
 ├── 📄 PROMPT_DOCUMENTATION.md      → Prompts used on each role
     ├──Front-End.md
     ├──Back-End.md
@@ -285,9 +286,18 @@ After 2-day project completion:
 
 ### DevOps Tools
 - **CI/CD:** GitHub Actions
-- **Testing:** [Your testing framework]
-- **Deployment:** [Your deployment platform]
-- **Monitoring:** [Your monitoring tools]
+- **Testing:** 
+  - Backend: JUnit 5, Spring Boot Test
+  - Frontend: Jest, React Testing Library
+  - E2E: Cypress/Selenium
+- **Deployment:** 
+  - Platform: GitHub Actions
+  - Infrastructure: Docker
+  - Target: [Not specified due to time constraints]
+- **Monitoring:** 
+  - Application: Spring Boot Actuator + Prometheus + Grafana
+  - Error Tracking: Sentry
+  - Logs: [To be configured]
 
 ---
 

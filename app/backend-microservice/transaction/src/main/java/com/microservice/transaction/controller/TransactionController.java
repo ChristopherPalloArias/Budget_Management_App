@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.microservice.transaction.infrastructure.TransactionMessageProducer;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,9 @@ public class TransactionController {
     public ResponseEntity<Transaction> create(@Valid @RequestBody Transaction transaction) {
         Transaction created = transactionService.create(transaction);
         transactionMessageProducer.sendCreated(created);
-        return ResponseEntity.ok(created);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(created);
     }
 
     @GetMapping("/{id}")
