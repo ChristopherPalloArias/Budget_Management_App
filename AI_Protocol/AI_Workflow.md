@@ -2,7 +2,7 @@
 **Project:** Budget Management App 
 **Team:** Jacob,Majo,Agus 
 **Duration:** 2.5 days  
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-08
 
 ---
 
@@ -75,15 +75,22 @@ Maintain these key documents in the repository:
 📁 majoymajo/Taller_Diagnostico
 ├── 📄 README.md                    → Project overview, setup, installation
 ├── 📄 AI_Workflow.md   → This document
-├── 📄 ARCHITECTURE.md              → System design, tech stack, structure
+├── 📁 ARCHITECTURE             → System design, tech stack, structure
   ├── 📄 ARCHITECTURE-Front-End.md  
-  ├── 📄 ARCHITECTURE-Back-End.md             
-├── 📄 PROMPT_DOCUMENTATION.md      → Prompts used on each role
+  ├── 📄 ARCHITECTURE-Back-End.md
+├── 📁 CI/CD Pipeline
+  ├── 📄 CI/CD Pipeline.yml
+  ├── 📄 ci.yml
+├── 📁 Automatic Debugging
+  ├── 📄 bug_report.md       
+├── 📁 PROMPT_DOCUMENTATION      → Prompts used on each role
     ├──Front-End.md
     ├──Back-End.md
     ├── QA.md
-├── 📄 TEST.md                      → Testing strategy and commands
-├── 📄 DEPLOYMENT.md                → Deployment process and environments
+├── 📁 app
+  ├── 📄 Front-End
+  ├── 📄 Back-End
+
 
 
 ```
