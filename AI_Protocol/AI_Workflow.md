@@ -2,7 +2,7 @@
 **Project:** Budget Management App 
 **Team:** Jacob,Majo,Agus 
 **Duration:** 2.5 days  
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-05
 
 ---
 
@@ -285,18 +285,9 @@ After 2-day project completion:
 
 ### DevOps Tools
 - **CI/CD:** GitHub Actions
-- **Testing:** 
-  - Backend: JUnit 5, Spring Boot Test
-  - Frontend: Jest, React Testing Library
-  - E2E: Cypress/Selenium
-- **Deployment:** 
-  - Platform: GitHub Actions
-  - Infrastructure: Docker
-  - Target: [Not specified due to time constraints]
-- **Monitoring:** 
-  - Application: Spring Boot Actuator + Prometheus + Grafana
-  - Error Tracking: Sentry
-  - Logs: [To be configured]
+- **Testing:** [Your testing framework]
+- **Deployment:** [Your deployment platform]
+- **Monitoring:** [Your monitoring tools]
 
 ---
 
