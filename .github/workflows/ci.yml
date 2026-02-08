@@ -18,6 +18,8 @@ jobs:
   frontend-test:
     name: Frontend - Vitest with Coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout Code
@@ -54,6 +56,8 @@ jobs:
   backend-transaction-test:
     name: Backend Transaction - Maven with JaCoCo
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     services:
       postgres:
@@ -103,6 +107,8 @@ jobs:
   backend-report-test:
     name: Backend Report - Maven with JaCoCo
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     services:
       postgres:
