@@ -613,3 +613,51 @@ Actúa como Senior Frontend Developer experto en UX. Tu objetivo es mejorar el c
 
 # FORMATO DE SALIDA
 1. Código actualizado de ReportFilters.tsx.
+
+---
+
+# ROLE
+Actúa como Technical Writer experto. Tu objetivo es crear un archivo README.md profesional para un proyecto Frontend de Gestión Financiera.
+
+# CONTEXTO TÉCNICO
+- Stack: React + Vite + TypeScript + pnpm.
+- UI: shadcn/ui y Tailwind CSS.
+- Infraestructura: Docker (Nginx) y Variables de Entorno (.env).
+
+# SECCIONES REQUERIDAS
+1. Prerrequisitos: Listar versiones necesarias de Node.js (v20+), pnpm y Docker.
+2. Instalación Local: 
+   - Clonar repositorio.
+   - Instalación de dependencias con pnpm.
+   - Configuración del archivo .env (explicar cada variable: API_URL, Firebase Keys).
+   - Comando para correr en desarrollo.
+3. Despliegue con Docker:
+   - Explicar el build de la imagen.
+   - Uso de Docker Compose para levantar el servicio en el puerto 3000.
+4. Scripts Disponibles: Explicar comandos de lint, build y preview.
+
+# REQUISITOS DE CALIDAD
+- Usa badges para el stack tecnológico.
+- Incluye bloques de código claros para los comandos de terminal.
+- El tono debe ser instructivo y directo.
+
+---
+
+# ROLE
+Actúa como Arquitecto de Software Senior. Tu objetivo es redactar una sección detallada (o un archivo ARCHITECTURE.md) que explique la ingeniería detrás del proyecto.
+
+# TAREAS ESPECÍFICAS
+1. Estructura de Carpetas: Explicar la organización modular:
+   - src/core: Configuraciones globales (Axios, Rutas, Temas).
+   - src/shared: Componentes UI reutilizables (shadcn), utilidades y hooks globales.
+   - src/modules: División por dominios (Transactions, Reports, Auth).
+2. Patrones de Diseño:
+   - Patrón Adapter (Mapper): Explicar por qué desacoplamos el JSON del Backend de los modelos de la UI.
+   - Custom Hooks: Uso de TanStack Query para la lógica de fetching.
+   - State Management: Uso de Zustand para estados globales ligeros.
+3. Flujo de Datos: Describir el camino desde que se hace un fetch en el Service, pasa por el Adapter, se almacena en el caché de Query y llega al componente de la tabla.
+4. Decisiones Técnicas: Explicar por qué se eligió Nginx para servir la SPA y el manejo de rutas.
+
+# REQUISITOS DE CALIDAD
+- Incluye una representación visual de la estructura de directorios usando un bloque de texto tipo tree.
+- Explica los beneficios de esta arquitectura: Escalabilidad, mantenibilidad y desacoplamiento.
