@@ -1,242 +1,139 @@
-# 🧭 Budget Management App
-Take control of your money with a fast, modern, and delightful budgeting experience.
+# 🧭 Budget Management App (AI-Driven)
+
+> **A modern, event-driven financial tracking application built in a 2.5-day AI-First sprint.**
 
 [![Build](https://github.com/majoymajo/Budget_Management_App/actions/workflows/ci.yml/badge.svg)](https://github.com/majoymajo/Budget_Management_App/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![SpringBoot](https://img.shields.io/badge/Spring_Boot-4.0.2-6DB33F?logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.9-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Vitest](https://img.shields.io/badge/Tests-Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
-
-> A modern budget tracking app built with React + TypeScript, designed to simplify your financial life. Track income, categorize expenses, visualize trends, and stay on top of your goals with a sleek UI and smooth developer experience.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 ---
 
-## Table of Contents
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Setup](#environment-setup)
-  - [Run Locally](#run-locally)
-- [Usage](#usage)
-- [Available Scripts](#available-scripts)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [Roadmap](#roadmap)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
-- [Contact](#contact)
+## 📖 Project Overview
+
+**Budget Management App** is a full-stack solution designed to help users track their income and expenses while generating real-time financial reports.
+
+What makes this project unique is its **methodology**: it was architected, developed, and deployed in an intensive **2.5-day micro-sprint** by a team of 3 developers working in tandem with AI Assistants (GitHub Copilot, Open Code). The project serves as a case study for **AI-First Software Development**.
 
 ---
 
-## Features
-- Clean, responsive UI powered by Tailwind CSS
-- Dark mode support out of the box
-- Category-based income and expense tracking
-- Fast client-side data syncing with TanStack Query
-- Keyboard-friendly UX with accessible components (Radix UI)
-- Local mock API for development via JSON Server
-- Firebase-ready for authentication and cloud persistence
-- Type-safe forms and validation with React Hook Form + Zod
-- Modular architecture with reusable UI primitives
+## 🏗️ Architecture
+
+The system follows a **Microservices Architecture** with an Event-Driven design for decoupling heavy processing.
+
+### 1. Frontend (Modular Monolith)
+
+- **Main Tech**: React 19, TypeScript 5.9, Vite 7.
+- **Styling**: Tailwind CSS 4, Shadcn/UI (Radix UI).
+- **State Management**: Zustand (Global UI state), TanStack Query (Server state & caching).
+- **Auth**: Firebase Authentication.
+- **Routing**: React Router DOM (Modular Architecture).
+- **Testing**: Vitest + React Testing Library.
+- **CI/CD**: GitHub Actions (Linting, Unit Tests, Build).
+
+### 2. Backend (Microservices)
+
+- **Language**: Java 17 (Eclipse Temurin).
+- **Framework**: Spring Boot 4.0.2.
+- **Architecture**: Event-Driven Microservices.
+  - **Transaction Service**: Handles income/expense CRUD operations and publishes `TransactionCreated` events to RabbitMQ.
+  - **Report Service**: Listens to RabbitMQ events to aggregate financial summaries and analytics.
+- **Database**: MySQL 8.0 (One DB per service: `transactions_db`, `reports_db`).
+- **Communication**: RabbitMQ (Message Broker).
+
+### 3. devOps & Infrastructure
+
+- **Infrastructure**: Docker & Docker Compose for orchestration.
+- **CI/CD**: Fully automated pipeline via GitHub Actions.
 
 ---
 
-## Tech Stack
-- Frontend: React 19, TypeScript, Vite
-- Styling: Tailwind CSS 4, tw-animate-css, CSS variables
-- State & Data: TanStack Query, Zustand
-- Forms & Validation: React Hook Form, Zod
-- UI & Icons: Radix UI, lucide-react
-- Routing: React Router
-- Backend (dev): JSON Server
-- Cloud (optional): Firebase
-- Testing: Vitest, Testing Library (React + Jest DOM)
-- Tooling: ESLint (flat config), TypeScript ESLint
+## 🤖 AI Workflow Methodology
+
+We adopted a hybrid **Agile-DevOps** workflow specifically adapted for AI collaboration:
+
+- **Micro-Sprints**: Intensive 2.5-day development cycle.
+- **Roles**: Frontend, Backend, and QA Engineers working with AI.
+- **Prompt Engineering**: We standardized prompts for code generation, QA testing, and documentation (see `PROMPT_DOCUMENTATION/`).
+- **Automation**: CI/CD pipelines generated and optimized by AI.
+
+👉 **[Read the full AI Protocol & Methodology here](./AI_Protocol/AI_Workflow.md)**.
 
 ---
 
-## Project Structure
-```text
-Budget_Management_App/
-├─ .github/                   # GitHub configs / workflows (CI)
-├─ AI_Protocol/               # AI-related docs (internal)
-├─ CI-CD Pipeline/            # CI/CD configuration & assets
-├─ PROMPT_DOCUMENTATION/      # Prompt docs (internal)
-└─ app/
-   └─ Frontend/
-      ├─ index.html
-      ├─ package.json
-      ├─ vite.config.ts
-      ├─ vitest.config.ts
-      ├─ setupTests.ts
-      └─ src/
-         ├─ main.tsx
-         ├─ index.css
-         ├─ core/            # app router, query client, etc.
-         ├─ components/      # UI primitives & features
-         └─ lib/             # utilities (e.g., cn)
-```
-
----
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ (LTS recommended)
-- npm 9+ or pnpm/yarn
-- Optional: Firebase project (for auth/persistence)
 
-### Installation
-Clone the repository and install dependencies:
+- **Docker & Docker Compose** (Essential for Backend)
+- **Node.js 18+** (For Frontend)
+- **Java 17 JDK** (Optional, if running backend without Docker)
+
+### Step 1: Start the Backend (Infrastructure)
+
+The backend services (Transactions, Reports, MySQL, RabbitMQ) are containerized.
 
 ```bash
-# Clone
-git clone https://github.com/majoymajo/Budget_Management_App.git
-cd Budget_Management_App/app/Frontend
+cd app/backend-microservice/docker-compose/production
+docker-compose up -d
+```
 
-# Install
+_This starts the MySQL databases, RabbitMQ broker, and both Spring Boot Microservices._
+
+### Step 2: Start the Frontend
+
+Run the React application locally.
+
+```bash
+cd app/Frontend
 npm install
+# Ensure you have a .env file configured (see .env.example)
+npm run dev
 ```
 
-### Environment Setup
-Create a `.env` file in `app/Frontend` with your Firebase credentials (optional but recommended):
-
-```bash
-# app/Frontend/.env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-### Run Locally
-Start the dev server and (optionally) the mock API:
-
-```bash
-# in app/Frontend
-npm run dev          # starts Vite at http://localhost:3000
-npm run json-server  # starts JSON Server at http://localhost:3001
-```
-
-> Note: The app is configured to run on port 3000. JSON Server runs on 3001 by default.
+_Access the application at `http://localhost:5173` (or as specified by Vite)._
 
 ---
 
-## Usage
+## 📂 Project Structure
 
-### Example: Adding a Transaction (mock API)
-If you're using JSON Server, you can seed or post transactions like:
-
-```json
-{
-  "id": 1,
-  "type": "expense",
-  "category": "Groceries",
-  "amount": 42.50,
-  "date": "2026-02-08",
-  "notes": "Weekly essentials"
-}
-```
-
-Post via curl:
-```bash
-curl -X POST http://localhost:3001/transactions \
-  -H "Content-Type: application/json" \
-  -d '{"type":"income","category":"Salary","amount":1200,"date":"2026-02-08"}'
-```
-
-### Screenshots
-Add screenshots to `docs/screenshots/` and reference them here:
-
-```markdown
-![Dashboard Screenshot](docs/screenshots/dashboard.png)
-![Transaction View](docs/screenshots/transactions.png)
+```text
+Budget_Management_App/
+├── .github/workflows/          # CI/CD Pipelines
+├── AI_Protocol/                # Methodology & AI Guidelines
+├── PROMPT_DOCUMENTATION/       # Prompt Library (Frontend, Backend, QA)
+├── app/
+│   ├── Frontend/               # React Application (Modular Monolith)
+│   └── backend-microservice/
+│       ├── transaction/        # Spring Boot Service (Producer)
+│       ├── report/             # Spring Boot Service (Consumer)
+│       └── docker-compose/     # Orchestration configs
+└── README.md                   # Project Entry Point
 ```
 
 ---
 
-## Available Scripts
-From `app/Frontend`:
+## ✨ Key Features
 
-```bash
-npm run dev            # Start local dev server
-npm run build          # Type-check + build production assets
-npm run preview        # Preview production build
-npm run lint           # Lint codebase with ESLint
-npm run test           # Run unit tests (Vitest)
-npm run test:ci        # CI-friendly test run with coverage
-npm run test:coverage  # Generate coverage reports
-npm run json-server    # Run local mock API on port 3001
-```
+- **Smart Transactions**: Categorize and track spending with instant visual feedback.
+- **Event-Driven Reports**: Financial summaries update asynchronously via RabbitMQ events.
+- **Secure Auth**: Integration with Firebase Authentication.
+- **Modern UI**: Dark/Light mode, responsive design, and accessible components built with Shadcn/UI.
 
 ---
 
-## Testing
-Vitest is configured with JSDOM and Testing Library:
+## 👥 Contributors
 
-```ts
-// vitest.config.ts
-test: {
-  globals: true,
-  environment: 'jsdom',
-  setupFiles: './setupTests.ts',
-  include: ['src/**/*.{test,spec}.{ts,tsx}'],
-  coverage: { provider: 'v8', reporter: ['text','lcov','html'] }
-}
-```
-
-Run:
-```bash
-npm run test
-npm run test:coverage
-```
+- **Jacob** - Backend Engineer
+- **Majo** - Frontend Engineer
+- **Agus** - QA & DevOps Engineer
+- **Gabriel** - Software Architect
+- **AI Assistants** - GitHub Copilot & Open Code
 
 ---
 
-## Contributing
-Contributions are welcome! To propose changes:
+## 📄 License
 
-1. Fork the repo and create a feature branch:
-   ```bash
-   git checkout -b feat/awesome-improvement
-   ```
-2. Follow good commit hygiene (e.g., Conventional Commits).
-3. Ensure lint and tests pass:
-   ```bash
-   npm run lint && npm run test
-   ```
-4. Open a pull request with a clear description, screenshots, and any relevant context.
-
----
-
-## Roadmap
-- Budget templates and multi-currency support
-- Recurring transactions and reminders
-- Advanced analytics (cash flow, category trends)
-- Import/export (CSV/Excel)
-- PWA offline mode
-
----
-
-## Acknowledgments
-- [React](https://react.dev/), [Vite](https://vite.dev/), [Tailwind CSS](https://tailwindcss.com/), [TanStack Query](https://tanstack.com/query)
-- [Radix UI](https://www.radix-ui.com/), [Testing Library](https://testing-library.com/), [Vitest](https://vitest.dev/)
-- Icons by [lucide](https://lucide.dev/)
-
----
-
-## License
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
-
----
-
-## Contact
-Questions or ideas? Reach out:
-- GitHub: [@majoymajo](https://github.com/majoymajo)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
