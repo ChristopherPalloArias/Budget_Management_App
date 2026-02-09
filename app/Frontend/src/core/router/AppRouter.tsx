@@ -30,27 +30,7 @@ const HomePage = () => (
     </div>
 );
 
-const DashboardHome = () => (
-    <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Panel Principal
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-700 mb-2">Transacciones</h3>
-                <p className="text-gray-500 text-sm">Módulo en desarrollo</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-700 mb-2">Presupuestos</h3>
-                <p className="text-gray-500 text-sm">Módulo en desarrollo</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-700 mb-2">Reportes</h3>
-                <p className="text-gray-500 text-sm">Módulo en desarrollo</p>
-            </div>
-        </div>
-    </div>
-);
+
 
 export const AppRouter = () => {
     return (
@@ -68,9 +48,9 @@ export const AppRouter = () => {
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoute />}>
                     <Route element={<DashboardLayout />}>
-                        <Route path="/dashboard" element={<DashboardHome />} />
+                        <Route path="/dashboard" element={<ReportsPage />} />
                         <Route path="/transactions" element={<TransactionPage />} />
-                        <Route path="/reports" element={<ReportsPage />} />
+                        
                     </Route>
                 </Route>
 

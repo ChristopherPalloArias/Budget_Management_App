@@ -6,9 +6,18 @@ import { useUserStore } from "@/modules/auth"
 
 export function useTransactions(period?: string) {
   const { user} = useUserStore()
-  if (!user) return null
-
   const queryClient = useQueryClient()
+
+  // Return default values when no user
+  if (!user) {
+    return {
+      transactions: [],
+      isLoading: false,
+      error: null,
+      createTransaction: () => {},
+      isCreating: false,
+    }
+  }
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions", period],

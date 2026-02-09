@@ -9,9 +9,8 @@ import {
 } from "../../../components/ui/breadcrumb"
 
 const routeMap: Record<string, string> = {
+  "/dashboard": "Reportes",
   "/transactions": "Transacciones",
-  "/budgets": "Presupuestos",
-  "/reports": "Reportes",
 }
 
 function capitalizeFirstLetter(str: string): string {

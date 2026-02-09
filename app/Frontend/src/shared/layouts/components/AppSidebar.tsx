@@ -16,14 +16,14 @@ import { NavUser } from "./NavUser"
 
 const items = [
   {
+    title: "Reportes",
+    url: "/dashboard",
+    icon: FileText,
+  },
+  {
     title: "Transacciones",
     url: "/transactions",
     icon: TrendingUp,
-  },
-  {
-    title: "Reportes",
-    url: "/reports",
-    icon: FileText,
   },
 ]
 
