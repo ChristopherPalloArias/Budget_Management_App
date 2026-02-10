@@ -146,8 +146,8 @@ _Access the application at `http://localhost:5173` (or as specified by Vite)._
 ## 👥 Contributors
 
 - **Jacob** - Backend Engineer
-- **Majo** - Frontend Engineer
-- **Agus** - QA & DevOps Engineer
+- **Agus** - Frontend Engineer
+- **Majo** - QA & DevOps Engineer
 - **Gabriel** - Software Architect
 - **AI Assistants** - GitHub Copilot & Open Code
 
