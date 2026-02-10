@@ -7,7 +7,7 @@ import type { TransactionItemResponse } from '../types/transaction.types';
 const transactionsHttpClient = HttpClient.getInstance('transactions');
 
 export const getTransactionsByUser = async (userId: string, period?: string): Promise<TransactionModel[]> => {
-    const endpoint = period ? `/v1/transactions?period=${period}` : `/v1/transactions/user/${userId}`;
+    const endpoint = period ? `/v1/transactions?period=${period}` : `/v1/transactions?userId=${userId}`;
     const response = await transactionsHttpClient.get<TransactionItemResponse[]>(endpoint);
     return response.data.map(transactionAdapter);
 };
