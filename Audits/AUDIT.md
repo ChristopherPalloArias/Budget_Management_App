@@ -129,18 +129,6 @@
 
 ---
 
-#### 6. Inconsistent Error Handling
-**Severity:** Low
-
-**Finding:** No centralized `@ControllerAdvice` for standardized exception mapping.
-
-**Violated Principles:**
-- Robust API contract design
-- Observability
-
-**Proposed Refactor:** Implement global `@ControllerAdvice` with standardized error responses and HTTP status codes.
-
----
 
 ## Section B: Frontend (React SPA)
 
