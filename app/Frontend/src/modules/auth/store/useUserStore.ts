@@ -1,23 +1,18 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { type User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../../core/config/firebase.config.js';
+import { authRepository } from '@/core/config/dependencies';
+import type { IAuthUser } from '@/core/auth/interfaces';
 
 interface UserState {
-    user: FirebaseUser | null;
+    user: IAuthUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
 
-    setUser: (user: FirebaseUser | null) => void;
+    setUser: (user: IAuthUser | null) => void;
     logout: () => void;
-
-    initAuthListener: () => void;
+    initializeAuth: () => () => void;
 }
 
-/**
- * User Store
- * Manages authentication state and listens to Firebase Auth changes
- */
 export const useUserStore = create<UserState>()(
     devtools(
         persist(
@@ -35,24 +30,25 @@ export const useUserStore = create<UserState>()(
 
                 logout: async () => {
                     try {
-                        await auth.signOut();
+                        await authRepository.signOut();
                         set({ user: null, isAuthenticated: false });
                     } catch (error) {
                         console.error('[Auth] Logout error:', error);
                     }
                 },
 
-                initAuthListener: () => {
-                    onAuthStateChanged(auth, (user) => {
+                initializeAuth: () => {
+                    const unsubscribe = authRepository.onAuthStateChanged((user) => {
                         get().setUser(user);
                     });
+                    return unsubscribe;
                 },
             }),
             {
                 name: 'user-storage',
                 partialize: (state) => ({
                     user: state.user ? {
-                        uid: state.user.uid,
+                        id: state.user.id,
                         email: state.user.email,
                         displayName: state.user.displayName,
                         photoURL: state.user.photoURL,
@@ -64,4 +60,4 @@ export const useUserStore = create<UserState>()(
     )
 );
 
-useUserStore.getState().initAuthListener();
+
