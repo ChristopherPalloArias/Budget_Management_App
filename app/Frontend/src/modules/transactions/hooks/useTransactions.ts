@@ -21,7 +21,7 @@ export function useTransactions(period?: string) {
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions", period],
-    queryFn: () => getTransactionsByUser(user.uid, period),
+    queryFn: () => getTransactionsByUser(user.id, period),
     staleTime: 1000 * 60 * 5,
     retry: 2,
   })

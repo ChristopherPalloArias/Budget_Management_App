@@ -37,7 +37,7 @@ export function TransactionPage() {
 }) => {
     const formData = {
       ...data,
-      userId: user.uid,
+      userId: user.id,
       date: new Date(data.date),
     }
     createTransaction(formData)
