@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
+import com.microservice.report.mapper.ReportMapper;
 import com.microservice.report.exception.ReportNotFoundException;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
 import lombok.RequiredArgsConstructor;
@@ -16,15 +18,14 @@ import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
 import com.microservice.report.service.ReportService;
 
-
 @RequiredArgsConstructor
 @Service
 public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepository;
 
     private Report getOrCreateReport(TransactionMessage transactionMessage) {
-        String userId = transactionMessage.getUserId();
-        String period = transactionMessage.getDate()
+        String userId = transactionMessage.userId();
+        String period = transactionMessage.date()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM"));
         return reportRepository.findByUserIdAndPeriod(userId, period)
                 .orElseGet(() -> reportRepository.save(
@@ -34,18 +35,17 @@ public class ReportServiceImpl implements ReportService {
                                 .totalIncome(BigDecimal.ZERO)
                                 .totalExpense(BigDecimal.ZERO)
                                 .balance(BigDecimal.ZERO)
-                                .build()
-                ));
+                                .build()));
     }
 
     @Transactional
     @Override
     public void updateReport(TransactionMessage transactionMessage) {
         Report report = getOrCreateReport(transactionMessage);
-        BigDecimal amount = transactionMessage.getAmount();
-        if (transactionMessage.getType() == TransactionType.INCOME) {
+        BigDecimal amount = transactionMessage.amount();
+        if (transactionMessage.type() == TransactionType.INCOME) {
             report.setTotalIncome(report.getTotalIncome().add(amount));
-        } else if (transactionMessage.getType() == TransactionType.EXPENSE) {
+        } else if (transactionMessage.type() == TransactionType.EXPENSE) {
             report.setTotalExpense(report.getTotalExpense().add(amount));
         }
         report.setBalance(report.getTotalIncome().subtract(report.getTotalExpense()));
@@ -54,23 +54,24 @@ public class ReportServiceImpl implements ReportService {
 
     @Transactional
     @Override
-    public Report getReport(String userId, String period) {
-        return reportRepository.findByUserIdAndPeriod(userId, period)
+    public ReportResponse getReport(String userId, String period) {
+        Report report = reportRepository.findByUserIdAndPeriod(userId, period)
                 .orElseThrow(() -> new ReportNotFoundException(userId, period));
+        return ReportMapper.toResponse(report);
     }
 
     @Transactional
     @Override
-    public List<Report> getReportsByUserId(String userId) {
-        return reportRepository.findByUserId(userId);
+    public List<ReportResponse> getReportsByUserId(String userId) {
+        List<Report> reports = reportRepository.findByUserId(userId);
+        return ReportMapper.toResponseList(reports);
     }
 
     @Transactional
     @Override
     public ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod) {
         List<Report> reports = reportRepository.findByUserIdAndPeriodBetweenOrderByPeriodAsc(
-                userId, startPeriod, endPeriod
-        );
+                userId, startPeriod, endPeriod);
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpense = BigDecimal.ZERO;
 
@@ -78,14 +79,14 @@ public class ReportServiceImpl implements ReportService {
             totalIncome = totalIncome.add(report.getTotalIncome());
             totalExpense = totalExpense.add(report.getTotalExpense());
         }
-        return ReportSummary.builder()
-                .userId(userId)
-                .startPeriod(startPeriod)
-                .endPeriod(endPeriod)
-                .reports(reports)
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .balance(totalIncome.subtract(totalExpense))
-                .build();
+
+        return ReportMapper.toSummary(
+                userId,
+                startPeriod,
+                endPeriod,
+                ReportMapper.toResponseList(reports),
+                totalIncome,
+                totalExpense,
+                totalIncome.subtract(totalExpense));
     }
 }

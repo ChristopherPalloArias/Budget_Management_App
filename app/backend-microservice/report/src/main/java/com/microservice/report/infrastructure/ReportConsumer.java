@@ -15,15 +15,15 @@ public class ReportConsumer {
 
     @RabbitListener(queues = RabbitMQConfiguration.TRANSACTION_CREATED_QUEUE)
     public void consumeCreated(TransactionMessage transactionMessage) {
-        log.info("Processing Created transaction ID: {}", transactionMessage.getTransactionId());
+        log.info("Processing Created transaction ID: {}", transactionMessage.transactionId());
         reportService.updateReport(transactionMessage);
-        log.info("Successfully created transaction ID: {}", transactionMessage.getTransactionId());
+        log.info("Successfully created transaction ID: {}", transactionMessage.transactionId());
     }
 
     @RabbitListener(queues = RabbitMQConfiguration.TRANSACTION_UPDATED_QUEUE)
     public void consumeUpdated(TransactionMessage transactionMessage) {
-        log.info("Processing Updated transaction ID: {}", transactionMessage.getTransactionId());
+        log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
         reportService.updateReport(transactionMessage);
-        log.info("Successfully updated transaction ID: {}", transactionMessage.getTransactionId());
+        log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
 }
