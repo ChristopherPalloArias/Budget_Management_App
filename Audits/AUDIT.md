@@ -13,9 +13,9 @@
 |----------|----------|------|--------|-----|-------|
 | **Backend Anti-patterns** | 2 | 0 | 0 | 0 | 2 |
 | **Backend Code Smells** | 0 | 1 | 2 | 0 | 3 |
-| **Frontend Anti-patterns** | 0 | 2 | 0 | 0 | 2 |
-| **Frontend Code Smells** | 0 | 0 | 2 | 0 | 2 |
-| **Overall** | **2** | **3** | **4** | **0** | **9** |
+| **Frontend Anti-patterns** | 0 | 3 | 0 | 0 | 3 |
+| **Frontend Code Smells** | 0 | 0 | 4 | 1 | 5 |
+| **Overall** | **2** | **4** | **6** | **1** | **13** |
 
 ---
 
@@ -234,7 +234,110 @@
 
 ---
 
-#### 11. Duplicated Types/Models
+#### 11. God Components
+**Severity:** Medium
+
+**Finding:** `DataTable.tsx` (238 lines) handles multiple responsibilities: state management (pagination, filters, search), formatting/filtering logic, and complex UI rendering.
+
+**Evidence:**
+- Component size and multiple concerns in single file  
+  [app/Frontend/src/modules/transactions/components/DataTable.tsx](https://github.com/majoymajo/Budget_Management_App/blob/1083c51890b3b9a285dca3ad4059d1f70b09c5e3/app/Frontend/src/modules/transactions/components/DataTable.tsx#L1-L238)
+
+**Violated Principles:**
+- SRP (Single Responsibility Principle)
+- Component Composition
+
+**Impact:** Difficult testing, reduced maintainability, tight coupling
+
+**Proposed Refactor:** Extract pagination logic to custom hooks (`usePagination`), filtering to separate utility functions, and UI sub-components to dedicated files.
+
+---
+
+#### 12. Hardcoded Values & Magic Numbers
+**Severity:** Medium
+
+**Finding:** Multiple hardcoded values across components and services without configuration.
+
+**Evidence:**
+- Currency formatting logic: DataTable.tsx:15-20
+- Category color mapping: DataTable.tsx:22-36  
+- Date logic: useTransactionStore.ts:18
+- Page size magic number: DataTable.tsx:48 (`pageSize = 10`)
+- Endpoint strings: transactionService.ts:10
+- Timeout value: HttpClient.ts:16 (`15000ms`)
+
+**Violated Principles:**
+- Configuration Management
+- Magic Number Elimination
+
+**Impact:** Maintenance difficulties, no runtime configurability, inconsistent behavior
+
+**Proposed Refactor:** Move hardcoded values to configuration files/environment variables. Create constants files for magic numbers. Use environment-specific config for API endpoints and timeouts.
+
+---
+
+### 🔴 Additional Architectural Anti-patterns
+
+#### 13. Fragmented Logic
+**Severity:** High
+
+> [!WARNING] **Business Logic Scattered Across Components**
+
+**Finding:** Business logic mixed with rendering in multiple components, creating fragmented and duplicated logic.
+
+**Evidence:**
+- TransactionPage.tsx:29: Business logic mixed with conditional rendering
+- LoginForm.tsx:37-56: Error handling with `any` types and duplicated logic
+
+**Violated Principles:**
+- Separation of Concerns
+- Single Responsibility Principle
+
+**Impact:** Reduced reusability, testing complexity, maintenance overhead
+
+**Proposed Refactor:** Extract business logic to custom hooks or service functions. Implement proper error handling with typed interfaces. Separate rendering from business concerns.
+
+---
+
+#### 14. Props Inconsistency & Type Safety Issues
+**Severity:** High
+
+**Finding:** Inconsistent prop typing and use of `any` types, reducing type safety.
+
+**Evidence:**
+- createTransactionAdapter.ts:18: Returns `any` instead of specific type
+- useTransactions.ts:35: Error parameter typed as `any` in error handler
+
+**Violated Principles:**
+- Type Safety
+- Interface Consistency
+
+**Impact:** Reduced compile-time safety, runtime errors, poor IDE support
+
+**Proposed Refactor:** Implement proper TypeScript interfaces for all props and return types. Remove `any` types and create specific error types for better error handling.
+
+---
+
+#### 15. Missing Error Boundaries
+**Severity:** Medium
+
+**Finding:** Absence of Error Boundaries for centralized error handling, leading to replicated error management across components.
+
+**Evidence:**
+- Error handling logic duplicated in multiple components
+- No centralized error boundary implementation
+
+**Violated Principles:**
+- Error Handling Best Practices
+- DRY (Don't Repeat Yourself)
+
+**Impact:** Inconsistent user experience, debugging difficulties, code duplication
+
+**Proposed Refactor:** Implement React Error Boundaries at route and component levels. Create centralized error reporting service. Standardize error fallback components.
+
+---
+
+#### 16. Duplicated Types/Models
 **Severity:** Low
 
 **Finding:** Multiple modules define similar types without shared domain consolidation.
@@ -270,10 +373,10 @@
 | Priority | Findings | Business Impact |
 |----------|----------|-----------------|
 | **P0** | Backend Critical Anti-patterns (1-2) | API stability, system maintainability |
-| **P1** | Frontend High Anti-patterns (7-8) | Testability, vendor flexibility |
+| **P1** | Frontend High Anti-patterns (7-8, 13-14) | Testability, vendor flexibility, type safety |
 | **P2** | Backend High Code Smells (3) | Operational efficiency |
-| **P3** | Medium Code Smells (4-5, 9-10) | Code quality, development velocity |
-| **P4** | Low Code Smells (6, 11) | Long-term maintainability |
+| **P3** | Medium Code Smells (4-5, 9-12, 15) | Code quality, development velocity |
+| **P4** | Low Code Smells (6, 16) | Long-term maintainability |
 
 ---
 
