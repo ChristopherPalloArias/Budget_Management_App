@@ -4,6 +4,10 @@ import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.microservice.report.dto.PaginatedResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
 import com.microservice.report.mapper.ReportMapper;
@@ -62,9 +66,17 @@ public class ReportServiceImpl implements ReportService {
 
     @Transactional
     @Override
-    public List<ReportResponse> getReportsByUserId(String userId) {
-        List<Report> reports = reportRepository.findByUserId(userId);
-        return ReportMapper.toResponseList(reports);
+    public PaginatedResponse<ReportResponse> getReportsByUserId(String userId, Pageable pageable) {
+        Page<Report> page = reportRepository.findByUserId(userId, pageable);
+        List<ReportResponse> content = page.map(ReportMapper::toResponse).getContent();
+
+        return new PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast());
     }
 
     @Transactional
