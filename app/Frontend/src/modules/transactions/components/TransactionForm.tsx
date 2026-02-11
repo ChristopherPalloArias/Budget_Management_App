@@ -1,6 +1,6 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Form,
   FormControl,
@@ -8,17 +8,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../../../components/ui/form"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
+} from "../../../components/ui/form";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../components/ui/select"
-
+} from "../../../components/ui/select";
+import { TRANSACTION_CATEGORIES } from "../constants/transaction.constants";
 
 const transactionFormSchema = z.object({
   description: z.string().min(1, "La descripción es requerida"),
@@ -26,20 +26,19 @@ const transactionFormSchema = z.object({
   category: z.string().min(1, "La categoría es requerida"),
   type: z.enum(["INCOME", "EXPENSE"]),
   date: z.string().min(1, "La fecha es requerida"),
-})
-
-const categories = {
-  INCOME: ["Salario", "Negocio", "Inversiones", "Otros"],
-  EXPENSE: ["Alimentación", "Transporte", "Vivienda", "Salud", "Educación", "Entretenimiento", "Otros"],
-}
+});
 
 interface TransactionFormProps {
-  onSubmit: (data: z.infer<typeof transactionFormSchema>) => void
-  isLoading?: boolean
-  defaultValues?: z.infer<typeof transactionFormSchema>
+  onSubmit: (data: z.infer<typeof transactionFormSchema>) => void;
+  isLoading?: boolean;
+  defaultValues?: z.infer<typeof transactionFormSchema>;
 }
 
-export function TransactionForm({ onSubmit, isLoading, defaultValues }: TransactionFormProps) {
+export function TransactionForm({
+  onSubmit,
+  isLoading,
+  defaultValues,
+}: TransactionFormProps) {
   const form = useForm<z.infer<typeof transactionFormSchema>>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: defaultValues || {
@@ -47,11 +46,11 @@ export function TransactionForm({ onSubmit, isLoading, defaultValues }: Transact
       amount: 0,
       category: "",
       type: "EXPENSE",
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
     },
-  })
+  });
 
-  const selectedType = form.watch("type")
+  const selectedType = form.watch("type");
 
   return (
     <Form {...form}>
@@ -104,7 +103,9 @@ export function TransactionForm({ onSubmit, isLoading, defaultValues }: Transact
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    field.onChange(parseFloat(e.target.value) || 0)
+                  }
                 />
               </FormControl>
               <FormMessage />
@@ -125,7 +126,9 @@ export function TransactionForm({ onSubmit, isLoading, defaultValues }: Transact
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories[selectedType as keyof typeof categories].map((category) => (
+                  {TRANSACTION_CATEGORIES[
+                    selectedType as keyof typeof TRANSACTION_CATEGORIES
+                  ].map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -158,5 +161,5 @@ export function TransactionForm({ onSubmit, isLoading, defaultValues }: Transact
         </div>
       </form>
     </Form>
-  )
+  );
 }

@@ -1,48 +1,51 @@
-import { useState } from "react"
+import { useState } from "react";
 
-import { Button } from "../../../components/ui/button"
+import { Button } from "../../../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../components/ui/dialog"
-import { Skeleton } from "../../../components/ui/skeleton"
-import { useTransactions } from "../hooks/useTransactions"
-import { DataTable } from "../components/DataTable"
-import { TransactionForm } from "../components/TransactionForm"
-import { useUserStore } from "@/modules/auth"
-
+} from "../../../components/ui/dialog";
+import { Skeleton } from "../../../components/ui/skeleton";
+import { useTransactions } from "../hooks/useTransactions";
+import { useTransactionOperations } from "../hooks/useTransactionOperations";
+import { DataTable } from "../components/DataTable";
+import { TransactionForm } from "../components/TransactionForm";
+import { useUserStore } from "@/modules/auth";
+import type { TransactionFormData } from "../types/transaction.types";
 
 export function TransactionPage() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  
-  const { user } = useUserStore()
-  const { 
-    transactions, 
-    isLoading, 
-    error, 
-    createTransaction,
-    isCreating 
-  } = useTransactions()
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  if (!user) return null
+  const { user } = useUserStore();
+  const { transactions, isLoading, error: fetchError } = useTransactions();
 
-  const handleCreateTransaction = (data: {
-  description: string
-  amount: number
-  category: string
-  type: "INCOME" | "EXPENSE"
-  date: string
-}) => {
-    const formData = {
+  const {
+    createTransaction: createTransactionOperation,
+    isLoading: isCreating,
+    error: operationError,
+  } = useTransactionOperations();
+
+  if (!user) return null;
+
+  const handleCreateTransaction = async (data: {
+    description: string;
+    amount: number;
+    category: string;
+    type: "INCOME" | "EXPENSE";
+    date: string;
+  }) => {
+    const formData: TransactionFormData = {
       ...data,
-      userId: user.id,
       date: new Date(data.date),
+    };
+
+    const result = await createTransactionOperation(formData, user.id);
+    if (result.success) {
+      setIsCreateDialogOpen(false);
     }
-    createTransaction(formData)
-    setIsCreateDialogOpen(false)
-  }
+  };
 
   if (isLoading) {
     return (
@@ -66,32 +69,38 @@ export function TransactionPage() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
-  if (error) {
+  if (fetchError) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <p className="text-lg font-medium">Error al cargar transacciones</p>
         <p className="text-muted-foreground">
-          {(error as Error).message || "Inténtalo de nuevo más tarde"}
+          {(fetchError as Error).message || "Inténtalo de nuevo más tarde"}
         </p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => window.location.reload()}
           className="mt-4"
         >
           Reintentar
         </Button>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
+      {operationError && (
+        <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md">
+          {operationError}
+        </div>
+      )}
+
       {/* Tabla con paginación y filtrado */}
-      <DataTable 
-        data={transactions} 
+      <DataTable
+        data={transactions}
         onCreateTransaction={() => setIsCreateDialogOpen(true)}
       />
 
@@ -101,12 +110,12 @@ export function TransactionPage() {
           <DialogHeader>
             <DialogTitle>Nueva Transacción</DialogTitle>
           </DialogHeader>
-          <TransactionForm 
+          <TransactionForm
             onSubmit={handleCreateTransaction}
             isLoading={isCreating}
           />
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
