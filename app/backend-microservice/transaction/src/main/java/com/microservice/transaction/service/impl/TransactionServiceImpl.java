@@ -1,8 +1,10 @@
 package com.microservice.transaction.service.impl;
 
 import java.util.List;
-import java.util.Optional;
 
+import com.microservice.transaction.dto.TransactionMapper;
+import com.microservice.transaction.dto.TransactionRequest;
+import com.microservice.transaction.dto.TransactionResponse;
 import com.microservice.transaction.exception.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -18,23 +20,27 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
 
     @Override
-    public Transaction create(Transaction transaction) {
-        return transactionRepository.save(transaction);
+    public TransactionResponse create(TransactionRequest dto) {
+        Transaction entity = TransactionMapper.toRequest(dto);
+        Transaction saved = transactionRepository.save(entity);
+        return TransactionMapper.toResponse(saved);
     }
 
     @Override
-    public Transaction getById(Long id) {
-        Optional<Transaction> opt = transactionRepository.findById(id);
-        return opt.orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+    public TransactionResponse getById(Long id) {
+        Transaction found = transactionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+        return TransactionMapper.toResponse(found);
     }
 
     @Override
-    public List<Transaction> getAll() {
-        return transactionRepository.findAll();
+    public List<TransactionResponse> getAll() {
+        return TransactionMapper.toResponseDTOList(transactionRepository.findAll());
     }
 
     @Override
-    public List<Transaction> getByUserId(String userId) {
-        return transactionRepository.findByUserId(userId);
+    public List<TransactionResponse> getByUserId(String userId) {
+        return TransactionMapper.toResponseDTOList(transactionRepository.findByUserId(userId));
     }
+
 }
