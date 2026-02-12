@@ -28,3 +28,7 @@ spring:
           max-attempts: 3
           initial-interval: 2000
         default-requeue-rejected: false
+
+app:
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:4200"
