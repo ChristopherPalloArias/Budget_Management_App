@@ -7,13 +7,17 @@ import com.microservice.report.model.Report;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
     Optional<Report> findByUserIdAndPeriod(String userId, String period);
-    List<Report> findByUserId(String userId);
+
+    Page<Report> findByUserId(String userId, Pageable pageable);
+
     List<Report> findByUserIdAndPeriodBetweenOrderByPeriodAsc(
             String userId,
             String startPeriod,
-            String endPeriod
-    );
+            String endPeriod);
 }

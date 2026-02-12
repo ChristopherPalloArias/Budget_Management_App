@@ -6,9 +6,15 @@ import com.microservice.report.infrastructure.dto.TransactionMessage;
 
 import java.util.List;
 
+import com.microservice.report.dto.PaginatedResponse;
+import org.springframework.data.domain.Pageable;
+
 public interface ReportService {
     void updateReport(TransactionMessage transactionMessage);
+
     ReportResponse getReport(String userId, String period);
-    List<ReportResponse> getReportsByUserId(String userId);
+
+    PaginatedResponse<ReportResponse> getReportsByUserId(String userId, Pageable pageable);
+
     ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod);
 }

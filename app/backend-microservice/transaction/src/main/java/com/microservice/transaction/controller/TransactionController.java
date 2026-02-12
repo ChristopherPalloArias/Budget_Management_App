@@ -1,16 +1,16 @@
 package com.microservice.transaction.controller;
 
-import java.util.List;
-
-import com.microservice.transaction.dto.TransactionMapper;
+import com.microservice.transaction.dto.PaginatedResponse;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
-import com.microservice.transaction.model.Transaction;
 import com.microservice.transaction.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,8 +36,9 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> getAll(@RequestParam String userId) {
-        List<TransactionResponse> transactions = transactionService.getByUserId(userId);
+    public ResponseEntity<PaginatedResponse<TransactionResponse>> getAll(
+            @PageableDefault(size = 10, page = 0, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
+        PaginatedResponse<TransactionResponse> transactions = transactionService.getAll(pageable);
         return ResponseEntity.ok(transactions);
     }
 }

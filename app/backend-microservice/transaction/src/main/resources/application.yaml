@@ -19,3 +19,7 @@ spring:
     port: 5672
     username: guest
     password: guest
+
+app:
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:4200"
