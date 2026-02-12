@@ -2,6 +2,7 @@ package com.microservice.transaction.service.impl;
 
 import java.util.List;
 
+import com.microservice.transaction.dto.PaginatedResponse;
 import com.microservice.transaction.dto.TransactionMapper;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
@@ -9,6 +10,8 @@ import com.microservice.transaction.event.TransactionCreatedEvent;
 import com.microservice.transaction.exception.EntityNotFoundException;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.microservice.transaction.model.Transaction;
@@ -39,13 +42,17 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionResponse> getAll() {
-        return TransactionMapper.toResponseDTOList(transactionRepository.findAll());
-    }
+    public PaginatedResponse<TransactionResponse> getAll(Pageable pageable) {
+        Page<Transaction> page = transactionRepository.findAll(pageable);
+        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
 
-    @Override
-    public List<TransactionResponse> getByUserId(String userId) {
-        return TransactionMapper.toResponseDTOList(transactionRepository.findByUserId(userId));
+        return new PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast());
     }
 
 }

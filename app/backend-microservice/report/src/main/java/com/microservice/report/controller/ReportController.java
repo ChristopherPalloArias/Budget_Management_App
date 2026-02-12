@@ -1,14 +1,16 @@
 package com.microservice.report.controller;
 
+import com.microservice.report.dto.PaginatedResponse;
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.microservice.report.service.ReportService;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -25,8 +27,10 @@ public class ReportController {
     }
 
     @GetMapping("/{userId}/all")
-    public ResponseEntity<List<ReportResponse>> getReportsByUser(@PathVariable String userId) {
-        return ResponseEntity.ok(reportService.getReportsByUserId(userId));
+    public ResponseEntity<PaginatedResponse<ReportResponse>> getReportsByUser(
+            @PathVariable String userId,
+            @PageableDefault(size = 10, page = 0, sort = "period", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(reportService.getReportsByUserId(userId, pageable));
     }
 
     @GetMapping("/{userId}/summary")
