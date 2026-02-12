@@ -21,17 +21,18 @@ env:
   TYPESCRIPT_VERSION: '5.9.3'
   REACT_VERSION: '19.2'
 
+  # SonarCloud config
+  SONAR_PROJECT_KEY_BACKEND: 'majoymajo_Budget_Management_App'
+  SONAR_PROJECT_KEY_FRONTEND: 'majoymajo_Budget_Management_App'
+  SONAR_ORGANIZATION: 'majoymajo'
+
 jobs:
-  # ==========================================
-  # STAGE 1: VALIDATE & LINT (COMBINED)
-  # ==========================================
   validate:
     name: Validate Code Quality
     runs-on: ubuntu-latest
     permissions:
       contents: read
       checks: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -69,7 +70,6 @@ jobs:
         if: steps.detect.outputs.has_frontend == 'true'
         run: npm install -g pnpm
 
-      # ========== BACKEND VALIDATION ==========
       - name: Install Backend Dependencies (Maven)
         if: steps.detect.outputs.has_backend == 'true'
         run: mvn dependency:resolve
@@ -94,7 +94,6 @@ jobs:
         working-directory: ${{ steps.detect.outputs.pom_dir }}
         continue-on-error: true
 
-      # ========== FRONTEND VALIDATION ==========
       - name: Install Frontend Dependencies
         if: steps.detect.outputs.has_frontend == 'true'
         run: pnpm install --no-frozen-lockfile
@@ -113,9 +112,6 @@ jobs:
         working-directory: ./app/Frontend
         continue-on-error: true
 
-  # ==========================================
-  # STAGE 2: BACKEND TESTS (Java/Spring)
-  # ==========================================
   backend-test:
     name: Backend Tests - Java/Spring
     runs-on: ubuntu-latest
@@ -124,7 +120,6 @@ jobs:
       contents: read
       checks: write
       issues: write
-
     services:
       postgres:
         image: postgres:15
@@ -139,7 +134,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -198,38 +192,45 @@ jobs:
           comment_mode: always
         continue-on-error: true
 
-      - name: Backend Tests Failed - Create Issue
-        if: steps.backend_tests.outcome == 'failure'
+      - name: Backend Tests Failed - Create Issue (develop only)
+        if: steps.backend_tests.outcome == 'failure' && github.ref == 'refs/heads/develop'
         uses: actions/github-script@v7
         with:
           script: |
             const isPR = context.eventName === 'pull_request';
-            const branchName = isPR
-              ? context.payload.pull_request.head.ref
-              : context.ref.replace('refs/heads/', '');
-            const prInfo = isPR
-              ? '**PR:** #' + context.payload.pull_request.number + '\n'
-              : '';
+            const branchName = isPR ? context.payload.pull_request.head.ref : context.ref.replace('refs/heads/', '');
+            const prInfo = isPR ? '**PR:** #' + context.payload.pull_request.number + '\n' : '';
+            let filesList = '';
+            try {
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const baseSha = isPR ? context.payload.pull_request.base.sha : (context.payload.before || (context.sha + '^'));
+              const headSha = isPR ? context.payload.pull_request.head.sha : (context.payload.after || context.sha);
+              const compare = await github.rest.repos.compareCommits({ owner, repo, base: baseSha, head: headSha });
+              filesList = (compare.data.files || []).map(f => `- ${f.filename} (${f.status})`).join('\n') || '- No changed files detected';
+            } catch {
+              filesList = '- Unable to determine changed files';
+            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '🐛 Backend Tests Failed - ' + branchName,
-              body: '## Automated Bug Report\n\n'
-                + prInfo
-                + '**Branch:** ' + branchName + '\n'
-                + '**Author:** @' + context.actor + '\n'
-                + '**Timestamp:** ' + new Date().toISOString() + '\n\n'
-                + '### Failed Job\nBackend Tests - Java/Spring\n\n'
-                + '### How to Debug\n'
-                + '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n'
-                + '2. Download the `backend-test-results` artifact\n'
-                + '3. Run `mvn test` locally in the backend directory\n',
+              body:
+                '## Automated Bug Report\n\n' +
+                prInfo +
+                '**Branch:** ' + branchName + '\n' +
+                '**Author:** @' + context.actor + '\n' +
+                '**Timestamp:** ' + new Date().toISOString() + '\n\n' +
+                '### Failed Job\nBackend Tests - Java/Spring\n\n' +
+                '### How to Debug\n' +
+                '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n' +
+                '2. Download the `backend-test-results` artifact\n' +
+                '3. Run `mvn test` locally in the backend directory\n\n' +
+                '### Affected Files\n' +
+                filesList,
               labels: ['bug', 'automated-report']
             });
 
-  # ==========================================
-  # STAGE 3: FRONTEND TESTS (React/TypeScript)
-  # ==========================================
   frontend-test:
     name: Frontend Tests - React/TypeScript
     runs-on: ubuntu-latest
@@ -238,7 +239,6 @@ jobs:
       contents: read
       checks: write
       issues: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -289,37 +289,44 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Frontend Tests Failed - Create Issue
-        if: steps.frontend_tests.outcome == 'failure'
+      - name: Frontend Tests Failed - Create Issue (develop only)
+        if: steps.frontend_tests.outcome == 'failure' && github.ref == 'refs/heads/develop'
         uses: actions/github-script@v7
         with:
           script: |
             const isPR = context.eventName === 'pull_request';
-            const branchName = isPR
-              ? context.payload.pull_request.head.ref
-              : context.ref.replace('refs/heads/', '');
-            const prInfo = isPR
-              ? '**PR:** #' + context.payload.pull_request.number + '\n'
-              : '';
+            const branchName = isPR ? context.payload.pull_request.head.ref : context.ref.replace('refs/heads/', '');
+            const prInfo = isPR ? '**PR:** #' + context.payload.pull_request.number + '\n' : '';
+            let filesList = '';
+            try {
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const baseSha = isPR ? context.payload.pull_request.base.sha : (context.payload.before || (context.sha + '^'));
+              const headSha = isPR ? context.payload.pull_request.head.sha : (context.payload.after || context.sha);
+              const compare = await github.rest.repos.compareCommits({ owner, repo, base: baseSha, head: headSha });
+              filesList = (compare.data.files || []).map(f => `- ${f.filename} (${f.status})`).join('\n') || '- No changed files detected';
+            } catch {
+              filesList = '- Unable to determine changed files';
+            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '🐛 Frontend Tests Failed - ' + branchName,
-              body: '## Automated Bug Report\n\n'
-                + prInfo
-                + '**Branch:** ' + branchName + '\n'
-                + '**Author:** @' + context.actor + '\n'
-                + '**Timestamp:** ' + new Date().toISOString() + '\n\n'
-                + '### Failed Job\nFrontend Tests - React/TypeScript\n\n'
-                + '### How to Debug\n'
-                + '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n'
-                + '2. Run `cd app/Frontend && pnpm install && pnpm test` locally\n',
+              body:
+                '## Automated Bug Report\n\n' +
+                prInfo +
+                '**Branch:** ' + branchName + '\n' +
+                '**Author:** @' + context.actor + '\n' +
+                '**Timestamp:** ' + new Date().toISOString() + '\n\n' +
+                '### Failed Job\nFrontend Tests - React/TypeScript\n\n' +
+                '### How to Debug\n' +
+                '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n' +
+                '2. Run `cd app/Frontend && pnpm install && pnpm test` locally\n\n' +
+                '### Affected Files\n' +
+                filesList,
               labels: ['bug', 'automated-report']
             });
 
-  # ==========================================
-  # STAGE 4: INTEGRATION TESTS (Combined)
-  # ==========================================
   integration-test:
     name: Integration Tests - Backend & Frontend
     runs-on: ubuntu-latest
@@ -328,7 +335,6 @@ jobs:
       contents: read
       checks: write
       issues: write
-
     services:
       postgres:
         image: postgres:15
@@ -343,7 +349,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -410,38 +415,45 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Integration Tests Failed - Create Issue
-        if: steps.integration_tests.outcome == 'failure'
+      - name: Integration Tests Failed - Create Issue (develop only)
+        if: steps.integration_tests.outcome == 'failure' && github.ref == 'refs/heads/develop'
         uses: actions/github-script@v7
         with:
           script: |
             const isPR = context.eventName === 'pull_request';
-            const branchName = isPR
-              ? context.payload.pull_request.head.ref
-              : context.ref.replace('refs/heads/', '');
-            const prInfo = isPR
-              ? '**PR:** #' + context.payload.pull_request.number + '\n'
-              : '';
+            const branchName = isPR ? context.payload.pull_request.head.ref : context.ref.replace('refs/heads/', '');
+            const prInfo = isPR ? '**PR:** #' + context.payload.pull_request.number + '\n' : '';
+            let filesList = '';
+            try {
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const baseSha = isPR ? context.payload.pull_request.base.sha : (context.payload.before || (context.sha + '^'));
+              const headSha = isPR ? context.payload.pull_request.head.sha : (context.payload.after || context.sha);
+              const compare = await github.rest.repos.compareCommits({ owner, repo, base: baseSha, head: headSha });
+              filesList = (compare.data.files || []).map(f => `- ${f.filename} (${f.status})`).join('\n') || '- No changed files detected';
+            } catch {
+              filesList = '- Unable to determine changed files';
+            }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: '🐛 Integration Tests Failed - ' + branchName,
-              body: '## Automated Bug Report\n\n'
-                + prInfo
-                + '**Branch:** ' + branchName + '\n'
-                + '**Author:** @' + context.actor + '\n'
-                + '**Timestamp:** ' + new Date().toISOString() + '\n\n'
-                + '### Failed Job\nIntegration Tests\n\n'
-                + '### How to Debug\n'
-                + '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n'
-                + '2. Download the `integration-test-results` artifact\n'
-                + '3. Run `mvn verify -DskipUnitTests=true` locally\n',
+              body:
+                '## Automated Bug Report\n\n' +
+                prInfo +
+                '**Branch:** ' + branchName + '\n' +
+                '**Author:** @' + context.actor + '\n' +
+                '**Timestamp:** ' + new Date().toISOString() + '\n\n' +
+                '### Failed Job\nIntegration Tests\n\n' +
+                '### How to Debug\n' +
+                '1. Check the [workflow run](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ')\n' +
+                '2. Download the `integration-test-results` artifact\n' +
+                '3. Run `mvn verify -DskipUnitTests=true` locally\n\n' +
+                '### Affected Files\n' +
+                filesList,
               labels: ['bug', 'automated-report']
             });
 
-  # ==========================================
-  # STAGE 5: CODE SCANNING & SECURITY
-  # ==========================================
   security-scan:
     name: Security & Code Analysis
     runs-on: ubuntu-latest
@@ -449,7 +461,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -529,18 +540,84 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  # ==========================================
-  # STAGE 6: COMBINED BUILD (Backend + Frontend)
-  # ==========================================
+  sonarqube:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Detect project files
+        id: detect
+        run: |
+          if find . -name 'pom.xml' -not -path '*/target/*' | grep -q .; then
+            POM_PATH=$(find . -name 'pom.xml' -not -path '*/target/*' | head -1)
+            echo "has_backend=true" >> "$GITHUB_OUTPUT"
+            echo "pom_dir=$(dirname "$POM_PATH")" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_backend=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f "app/Frontend/package.json" ]; then
+            echo "has_frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Java (for backend)
+        if: steps.detect.outputs.has_backend == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Node.js (for frontend)
+        if: steps.detect.outputs.has_frontend == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: SonarCloud Analysis - Backend (Maven)
+        if: steps.detect.outputs.has_backend == 'true'
+        run: >
+          mvn -B -DskipTests sonar:sonar
+          -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_BACKEND }}
+          -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        working-directory: ${{ steps.detect.outputs.pom_dir }}
+
+      - name: SonarCloud Analysis - Frontend (Scanner)
+        if: steps.detect.outputs.has_frontend == 'true'
+        uses: sonarsource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_FRONTEND }}
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
+            -Dsonar.sources=app/Frontend
+            -Dsonar.javascript.lcov.reportPaths=app/Frontend/coverage/lcov.info
+            -Dsonar.exclusions=app/Frontend/node_modules/**,app/Frontend/dist/**
+
+      - name: SonarCloud Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 10
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test, integration-test]
+    needs: [backend-test, frontend-test, integration-test, sonarqube]
     if: success()
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -578,7 +655,6 @@ jobs:
         if: steps.detect.outputs.has_frontend == 'true'
         run: npm install -g pnpm
 
-      # ========== FRONTEND BUILD ==========
       - name: Build Frontend (React/TypeScript)
         if: steps.detect.outputs.has_frontend == 'true'
         run: pnpm install --no-frozen-lockfile && pnpm run build
@@ -595,7 +671,6 @@ jobs:
           retention-days: 5
           if-no-files-found: ignore
 
-      # ========== BACKEND BUILD ==========
       - name: Build Backend (Java/Spring)
         if: steps.detect.outputs.has_backend == 'true'
         run: mvn clean package -DskipTests
@@ -612,263 +687,15 @@ jobs:
           retention-days: 5
           if-no-files-found: ignore
 
-      # ========== BUILD INFO ==========
-      - name: Generate Build Info
-        run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Timestamp:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
-
-  # ==========================================
-  # STAGE 7: DEPLOY (Development)
-  # ==========================================
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: build
-    if: false  # Deployment disabled - not needed for this project
-    permissions:
-      contents: read
-    environment:
-      name: development
-      url: https://dev.example.com
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Frontend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend-dist
-
-      - name: Download Backend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-build-jar
-          path: ./backend-build
-
-      - name: Deploy Frontend to Dev Server
-        run: |
-          echo "🚀 Deploying Frontend to Development..."
-          # Add your deployment script here
-          # Example: rsync, S3 sync, Docker push, etc.
-        env:
-          DEV_HOST: ${{ secrets.DEV_HOST }}
-          DEV_USER: ${{ secrets.DEV_USER }}
-          DEV_KEY: ${{ secrets.DEV_SSH_KEY }}
-
-      - name: Deploy Backend to Dev Server
-        run: |
-          echo "🚀 Deploying Backend to Development..."
-          # Add your deployment script here
-          # Example: SSH deploy, Docker push, Kubernetes apply, etc.
-        env:
-          DEV_HOST: ${{ secrets.DEV_HOST }}
-          DEV_USER: ${{ secrets.DEV_USER }}
-          DEV_KEY: ${{ secrets.DEV_SSH_KEY }}
-
-      - name: Verify Deployment
-        run: |
-          echo "✅ Verifying deployment..."
-          sleep 10
-          curl -f https://dev.example.com/health || echo "Health check in progress..."
-
-      - name: Notify Deployment Success
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Successfully deployed to **Development** environment!\n\n🔗 **Frontend:** https://dev.example.com\n🔗 **Backend API:** https://api.dev.example.com\n\n**Deployed Artifacts:**\n- React 19.2 frontend compiled with TypeScript 5.9.3\n- Spring 4.0.2 backend running on Java 17'
-            });
-
-  # ==========================================
-  # STAGE 8: DEPLOY (Staging)
-  # ==========================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: false  # Deployment disabled - not needed for this project
-    permissions:
-      contents: read
-    environment:
-      name: staging
-      url: https://staging.example.com
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Frontend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend-dist
-
-      - name: Download Backend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-build-jar
-          path: ./backend-build
-
-      - name: Deploy to Staging
-        run: |
-          echo "🚀 Deploying to Staging environment..."
-          # Add your staging deployment script here
-        env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-          STAGING_USER: ${{ secrets.STAGING_USER }}
-          STAGING_KEY: ${{ secrets.STAGING_SSH_KEY }}
-
-      - name: Run Smoke Tests
-        run: |
-          echo "🧪 Running smoke tests..."
-          sleep 15
-          curl -f https://staging.example.com/health || echo "Smoke tests in progress..."
-
-      - name: Notify Staging Deployment
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Successfully deployed to **Staging** environment!\n\n🔗 **Frontend:** https://staging.example.com\n🔗 **Backend API:** https://api.staging.example.com\n\n**Ready for QA Testing**'
-            });
-
-  # ==========================================
-  # STAGE 9: DEPLOY (Production)
-  # ==========================================
-  deploy-prod:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: build
-    if: false  # Deployment disabled - not needed for this project
-    environment:
-      name: production
-      url: https://example.com
-    permissions:
-      contents: read
-      deployments: write
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Frontend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend-dist
-
-      - name: Download Backend Build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-build-jar
-          path: ./backend-build
-
-      - name: Create Deployment
-        id: deployment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const deployment = await github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.ref,
-              environment: 'production',
-              required_contexts: [],
-              auto_merge: false
-            });
-            console.log(`Deployment ID: ${deployment.data.id}`);
-            return deployment.data.id;
-
-      - name: Deploy Frontend to Production
-        run: |
-          echo "🚀 Deploying Frontend to Production..."
-          # Add your production deployment script here
-        env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-          PROD_KEY: ${{ secrets.PROD_SSH_KEY }}
-
-      - name: Deploy Backend to Production
-        run: |
-          echo "🚀 Deploying Backend to Production..."
-          # Add your production deployment script here
-        env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-          PROD_KEY: ${{ secrets.PROD_SSH_KEY }}
-
-      - name: Verify Production Deployment
-        run: |
-          echo "✅ Verifying production deployment..."
-          sleep 15
-          curl -f https://example.com/health || echo "Health check in progress..."
-
-      - name: Update Deployment Status (Success)
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: 'success',
-              environment_url: 'https://example.com',
-              description: 'Production deployment successful'
-            });
-
-      - name: Update Deployment Status (Failure)
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: 'failure',
-              description: 'Production deployment failed'
-            });
-
-      - name: Notify Production Deployment
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🎉 Successfully deployed to **Production**!\n\n🔗 **Frontend:** https://example.com\n🔗 **Backend API:** https://api.example.com\n\n**Deployment Details:**\n- Frontend: React 19.2 + TypeScript 5.9.3\n- Backend: Spring 4.0.2 on Java 17\n- Timestamp: ' + new Date().toISOString()
-            });
-
-  # ==========================================
-  # STAGE 10: NOTIFY & REPORT
-  # ==========================================
   notify:
     name: Send Notifications & Generate Report
     runs-on: ubuntu-latest
-    needs: [validate, backend-test, frontend-test, integration-test, security-scan]
+    needs: [validate, backend-test, frontend-test, integration-test, security-scan, sonarqube]
     if: always()
     permissions:
       contents: read
       pull-requests: write
       issues: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -903,93 +730,4 @@ jobs:
           echo "| Frontend Tests | ${{ needs.frontend-test.result == 'success' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.integration-test.result == 'success' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ PASSED' || '⚠️ WARNINGS' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- Backend Build: JAR & WAR files" >> $GITHUB_STEP_SUMMARY
-          echo "- Frontend Build: Compiled React application" >> $GITHUB_STEP_SUMMARY
-          echo "- Test Results: Unit, Integration, & Coverage reports" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Reports: CodeQL analysis & Dependency checks" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify on Slack (Optional)
-        if: failure()
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": "❌ CI/CD Pipeline Failed",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*CI/CD Pipeline Failed*\n*Branch:* ${{ github.ref }}\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*Author:* ${{ github.actor }}\n*Status:* Code Validation: ${{ needs.validate.result }} | Backend Tests: ${{ needs.backend-test.result }} | Frontend Tests: ${{ needs.frontend-test.result }}"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Workflow"
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-
-      - name: Comment on Pull Request
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const validate = '${{ needs.validate.result }}';
-            const backendTest = '${{ needs.backend-test.result }}';
-            const frontendTest = '${{ needs.frontend-test.result }}';
-            const integration = '${{ needs.integration-test.result }}';
-            const security = '${{ needs.security-scan.result }}';
-
-            const getEmoji = (status) => {
-              if (status === 'success') return '✅';
-              if (status === 'failure') return '❌';
-              return '⚠️';
-            };
-
-            const comment = `## 🚀 CI/CD Pipeline Report
-
-            | Check | Status |
-            |-------|--------|
-            | Code Validation | ${getEmoji(validate)} ${validate.toUpperCase()} |
-            | Backend Tests (Java/Spring) | ${getEmoji(backendTest)} ${backendTest.toUpperCase()} |
-            | Frontend Tests (React/TypeScript) | ${getEmoji(frontendTest)} ${frontendTest.toUpperCase()} |
-            | Integration Tests | ${getEmoji(integration)} ${integration.toUpperCase()} |
-            | Security Scan | ${getEmoji(security)} ${security.toUpperCase()} |
-
-            ### 📊 Stack Versions
-            - **Java**: 17
-            - **Spring**: 4.0.2
-            - **Node.js**: 19.2
-            - **React**: 19.2
-            - **TypeScript**: 5.9.3
-
-            ### 📦 Artifacts
-            - [Backend Build (JAR)](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [Frontend Build (Dist)](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [Test Results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [Security Reports](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            ${(backendTest === 'failure' || frontendTest === 'failure' || integration === 'failure') ? '### ⚠️ Failed Tests\nPlease review the workflow logs and artifacts above for detailed error information.' : '### ✅ All Checks Passed!\nYour code is ready for review and merge.'}`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+          echo "| SonarCloud Analysis | ${{ needs.sonarqube.result == 'success' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
