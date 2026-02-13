@@ -10,6 +10,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { TransactionTableRow } from "./TransactionTableRow";
 import { useDataTableLogic } from "@/shared/hooks/useDataTableLogic";
+import { DEFAULT_PAGE_SIZE } from "@/core/constants/app.constants";
 import type { TransactionModel } from "../types/transaction.types";
 
 interface DataTableProps {
@@ -34,7 +35,7 @@ export function DataTable({ data, onCreateTransaction }: DataTableProps) {
     prevPage,
   } = useDataTableLogic({
     data,
-    pageSize: 10,
+    pageSize: DEFAULT_PAGE_SIZE,
     searchFields: TRANSACTION_SEARCH_FIELDS,
   });
 

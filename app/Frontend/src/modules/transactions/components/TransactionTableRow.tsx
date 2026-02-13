@@ -1,18 +1,12 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getCategoryColor, getCategoryLabel } from "@/core/theme/categoryColors";
-import type { TransactionModel } from "@/modules/transactions/types/transaction.types";
+import { getCategoryColor, getCategoryLabel } from "@/core/constants/categories.constants";
+import { formatCurrency } from "@/shared/utils/currencyUtils";
+import type { TransactionModel } from "../types/transaction.types";
 
 interface TransactionTableRowProps {
   transaction: TransactionModel;
 }
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-  }).format(amount);
-};
 
 const formatDate = (date: Date): string => {
   return date.toLocaleDateString("es-CO", {

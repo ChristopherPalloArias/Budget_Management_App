@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { getCategoryColor, getCategoryLabel } from "@/core/theme/categoryColors";
+import { getCategoryColor, getCategoryLabel } from "@/core/constants/categories.constants";
 
 interface CategoryBadgeProps {
   category: string;
