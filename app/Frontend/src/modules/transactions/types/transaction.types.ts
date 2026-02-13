@@ -19,3 +19,11 @@ export interface TransactionModel {
 }
 
 export type TransactionFormData = Omit<TransactionModel, 'id' | 'userId'>;
+
+export interface TransactionFormInput {
+    description: string;
+    amount: number;
+    category: string;
+    type: 'INCOME' | 'EXPENSE';
+    date: string;
+}

@@ -13,7 +13,6 @@ export function ReportsPage() {
     endPeriod: filters.endPeriod,
   })
 
-  console.log(JSON.stringify(reportsData))
   useEffect(() => {
     refetch()
   }, [filters, refetch])
