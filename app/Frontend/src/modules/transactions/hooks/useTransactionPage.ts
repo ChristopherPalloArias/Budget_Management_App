@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useTransactionOperations } from '../hooks/useTransactionOperations';
 import { useUserStore } from '@/modules/auth';
-import type { TransactionFormData } from '../types/transaction.types';
+import type { TransactionFormData, TransactionFormInput } from '../types/transaction.types';
 
 interface TransactionPageState {
   isCreateDialogOpen: boolean;
@@ -18,8 +18,15 @@ interface UseTransactionPageReturn {
   operationError: string | null;
   openCreateDialog: () => void;
   closeCreateDialog: () => void;
-  createTransaction: (data: TransactionFormData) => Promise<boolean>;
+  handleCreateTransaction: (data: TransactionFormInput) => Promise<boolean>;
 }
+
+const transformFormInputToFormData = (input: TransactionFormInput): TransactionFormData => {
+  return {
+    ...input,
+    date: new Date(input.date),
+  };
+};
 
 export const useTransactionPage = (): UseTransactionPageReturn => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -41,10 +48,12 @@ export const useTransactionPage = (): UseTransactionPageReturn => {
     setIsCreateDialogOpen(false);
   }, []);
 
-  const createTransaction = useCallback(async (data: TransactionFormData): Promise<boolean> => {
+  const handleCreateTransaction = useCallback(async (input: TransactionFormInput): Promise<boolean> => {
     if (!user) return false;
     
-    const result = await createTransactionOperation(data, user.id);
+    const formData = transformFormInputToFormData(input);
+    const result = await createTransactionOperation(formData, user.id);
+    
     if (result.success) {
       setIsCreateDialogOpen(false);
       return true;
@@ -64,6 +73,6 @@ export const useTransactionPage = (): UseTransactionPageReturn => {
     operationError: operationError ?? null,
     openCreateDialog,
     closeCreateDialog,
-    createTransaction,
+    handleCreateTransaction,
   };
 };

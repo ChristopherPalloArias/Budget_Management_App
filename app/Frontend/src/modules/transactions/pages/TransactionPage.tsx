@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { useTransactionPage } from "../hooks/useTransactionPage";
 import { DataTable } from "../components/DataTable";
 import { TransactionForm } from "../components/TransactionForm";
-import type { TransactionFormData } from "../types/transaction.types";
 
 export function TransactionPage() {
   const {
@@ -22,7 +21,7 @@ export function TransactionPage() {
     operationError,
     openCreateDialog,
     closeCreateDialog,
-    createTransaction,
+    handleCreateTransaction,
   } = useTransactionPage();
 
   if (!userId) return null;
@@ -34,20 +33,6 @@ export function TransactionPage() {
   if (fetchError) {
     return <TransactionPageError message={fetchError?.message} />;
   }
-
-  const handleSubmit = async (data: {
-    description: string;
-    amount: number;
-    category: string;
-    type: "INCOME" | "EXPENSE";
-    date: string;
-  }) => {
-    const formData: TransactionFormData = {
-      ...data,
-      date: new Date(data.date),
-    };
-    await createTransaction(formData);
-  };
 
   return (
     <div className="space-y-6">
@@ -68,7 +53,7 @@ export function TransactionPage() {
             <DialogTitle>Nueva Transacción</DialogTitle>
           </DialogHeader>
           <TransactionForm
-            onSubmit={handleSubmit}
+            onSubmit={handleCreateTransaction}
             isLoading={isCreating}
           />
         </DialogContent>
