@@ -62,3 +62,20 @@ global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
 } as any;
+
+// Mock Element.scrollIntoView
+Element.prototype.scrollIntoView = function () {};
+
+// Mock HTMLElement.scrollTo
+if (typeof HTMLElement !== "undefined") {
+  HTMLElement.prototype.scrollTo = function () {};
+}
+
+// Mock pointer capture methods
+if (typeof Element !== "undefined") {
+  Element.prototype.hasPointerCapture = function () {
+    return false;
+  };
+  Element.prototype.setPointerCapture = function () {};
+  Element.prototype.releasePointerCapture = function () {};
+}
