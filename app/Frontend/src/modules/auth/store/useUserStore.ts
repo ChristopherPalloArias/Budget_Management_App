@@ -10,7 +10,7 @@ interface UserState {
 
     setUser: (user: IAuthUser | null) => void;
     logout: () => void;
-    initializeAuth: () => () => void;
+    initAuthListener: () => () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -37,7 +37,7 @@ export const useUserStore = create<UserState>()(
                     }
                 },
 
-                initializeAuth: () => {
+                initAuthListener: () => {
                     const unsubscribe = authRepository.onAuthStateChanged((user) => {
                         get().setUser(user);
                     });
@@ -59,5 +59,3 @@ export const useUserStore = create<UserState>()(
         { name: 'User Store' }
     )
 );
-
-
