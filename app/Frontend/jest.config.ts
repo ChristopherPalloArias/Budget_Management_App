@@ -10,6 +10,12 @@ const config: Config = {
 
   // Module paths
   moduleNameMapper: {
+    "^@/core/config/firebase\\.config$":
+      "<rootDir>/src/core/config/__mocks__/firebase.config.ts",
+    "^@/core/config/dependencies$":
+      "<rootDir>/src/core/config/__mocks__/dependencies.ts",
+    "^firebase/auth$": "<rootDir>/src/test/__mocks__/firebase/auth.ts",
+    "^firebase/app$": "<rootDir>/src/test/__mocks__/firebase/app.ts",
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(jpg|jpeg|png|gif|svg|webp)$":
@@ -22,6 +28,10 @@ const config: Config = {
     "<rootDir>/src/**/*.{spec,test}.{ts,tsx}",
   ],
 
+  // Ignore TypeScript .ts extensions in imports
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+  modulePathIgnorePatterns: [],
+
   // Transform files
   transform: {
     "^.+\\.tsx?$": [
@@ -31,6 +41,13 @@ const config: Config = {
           jsx: "react-jsx",
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
+          module: "esnext",
+          moduleResolution: "bundler",
+          skipLibCheck: true,
+          isolatedModules: true,
+        },
+        diagnostics: {
+          ignoreCodes: [5097, 1343, 2339],
         },
       },
     ],
@@ -56,14 +73,7 @@ const config: Config = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 
   // Ignore patterns
-  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-
-  // Globals
-  globals: {
-    "ts-jest": {
-      isolatedModules: true,
-    },
-  },
+  // testPathIgnorePatterns: ["/node_modules/", "/dist/"],
 };
 
 export default config;
