@@ -21,3 +21,7 @@ export const getReportByPeriod = async (userId: string, filters: Required<Pick<R
     const response = await reportsHttpClient.get<ReportItemResponse>(endpoint);
     return reportListAdapter([response.data])[0];
 };
+
+export const deleteReport = async (id: string | number): Promise<void> => {
+    await reportsHttpClient.delete(`/v1/reports/${id}`);
+};
