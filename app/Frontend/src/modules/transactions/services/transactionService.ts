@@ -17,8 +17,8 @@ export const getTransactionsByUser = async (
     ? `${API_ENDPOINTS.TRANSACTIONS}?period=${period}`
     : `${API_ENDPOINTS.TRANSACTIONS}?userId=${userId}`;
   const response =
-    await transactionsHttpClient.get<TransactionItemResponse[]>(endpoint);
-  return response.data.map(transactionAdapter);
+    await transactionsHttpClient.get<{ content: TransactionItemResponse[] }>(endpoint);
+  return (response.data.content || []).map(transactionAdapter);
 };
 
 export const createTransaction = async (
