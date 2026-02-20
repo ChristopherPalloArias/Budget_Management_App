@@ -223,4 +223,19 @@ public class ReportServiceImpl implements ReportService {
                 totalExpense,
                 totalIncome.subtract(totalExpense));
     }
+
+    /**
+     * Recalcula el reporte financiero para un usuario y período específico.
+     * 
+     * TODO: Implementar en GREEN phase
+     *
+     * @param userId identificador del usuario propietario del reporte
+     * @param period período en formato "yyyy-MM" (ejemplo: "2025-11")
+     * @return reporte recalculado con totales actualizados
+     */
+    @Override
+    public ReportResponse recalculateReport(String userId, String period) {
+        // 🔴 RED — Stub vacío para que tests fallen inicialmente
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

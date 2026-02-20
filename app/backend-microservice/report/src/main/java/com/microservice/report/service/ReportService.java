@@ -17,4 +17,14 @@ public interface ReportService {
     PaginatedResponse<ReportResponse> getReportsByUserId(String userId, Pageable pageable);
 
     ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod);
+
+    /**
+     * Recalcula el reporte financiero para un usuario y período específico.
+     * Obtiene todas las transacciones del período y recalcula los totales.
+     *
+     * @param userId identificador del usuario propietario del reporte
+     * @param period período en formato "yyyy-MM" (ejemplo: "2025-11")
+     * @return reporte recalculado con totales actualizados
+     */
+    ReportResponse recalculateReport(String userId, String period);
 }
