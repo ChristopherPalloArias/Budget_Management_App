@@ -17,4 +17,6 @@ public interface ReportService {
     PaginatedResponse<ReportResponse> getReportsByUserId(String userId, Pageable pageable);
 
     ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod);
+
+    void deleteReport(String userId, String period);
 }
