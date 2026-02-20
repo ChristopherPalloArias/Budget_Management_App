@@ -57,3 +57,10 @@ const triggerBlobDownload = (data: BlobPart, fileName: string, mimeType: string)
     globalThis.URL.revokeObjectURL(url);
 };
 
+/**
+ * Elimina un reporte financiero por su ID.
+ * Requiere confirmación del usuario antes de ser invocado.
+ */
+export const deleteReport = async (id: string | number): Promise<void> => {
+    await reportsHttpClient.delete(`/v1/reports/${id}`);
+};
