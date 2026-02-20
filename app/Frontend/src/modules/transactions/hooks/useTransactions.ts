@@ -27,7 +27,7 @@ export function useTransactions(period?: string) {
   })
 
   const createTransactionMutation = useMutation({
-    mutationFn: (data: TransactionFormData) => createTransaction(data),
+    mutationFn: (data: TransactionFormData) => createTransaction(data, user.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       toast.success("Transacción creada con éxito")

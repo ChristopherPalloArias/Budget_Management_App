@@ -10,7 +10,7 @@ export const mockAuthUser: IAuthUser = {
 
 // Mock functions
 export const loginWithEmail = jest.fn(
-  async (email: string, password: string): Promise<IAuthUser> => {
+  async (email: string, _password: string): Promise<IAuthUser> => {
     if (email === "error@test.com") {
       throw new Error("Invalid credentials");
     }
@@ -26,7 +26,7 @@ export const registerWithEmail = jest.fn(
   async (
     displayName: string,
     email: string,
-    password: string,
+    _password: string,
   ): Promise<IAuthUser> => {
     if (email === "existing@test.com") {
       throw new Error("Email already in use");

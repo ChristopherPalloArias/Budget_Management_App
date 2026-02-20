@@ -8,7 +8,7 @@ export const signInWithPopup = jest.fn();
 export const signOut = jest.fn();
 export const createUserWithEmailAndPassword = jest.fn();
 export const updateProfile = jest.fn();
-export const onAuthStateChanged = jest.fn((auth, callback) => {
+export const onAuthStateChanged = jest.fn((_auth, callback) => {
   // Call callback immediately with null user
   callback(null);
   // Return unsubscribe function
