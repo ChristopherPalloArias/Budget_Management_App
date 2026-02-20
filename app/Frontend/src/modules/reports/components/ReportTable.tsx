@@ -11,6 +11,7 @@ import { Button } from "../../../components/ui/button"
 
 import type { ReportModel } from "../types/report.types"
 import { Skeleton } from "../../../components/ui/skeleton"
+import { useDownloadReportPdf } from "../hooks/useDownloadReportPdf"
 
 interface ReportTableProps {
   data: ReportModel[]
@@ -20,6 +21,7 @@ interface ReportTableProps {
 export function ReportTable({ data, isLoading }: ReportTableProps) {
   const [pageIndex, setPageIndex] = useState(0)
   const pageSize = 10
+  const { download, downloadingPeriod } = useDownloadReportPdf()
 
   // Calculate pagination
   const startIndex = pageIndex * pageSize
@@ -46,6 +48,7 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
                 <TableHead>Balance Neto</TableHead>
                 <TableHead>Fecha de Generación</TableHead>
                 <TableHead>Ahorros</TableHead>
+                <TableHead>PDF</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -57,6 +60,7 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
                   <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-20" /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -78,6 +82,7 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
               <TableHead>Balance Neto</TableHead>
               <TableHead>Fecha de Generación</TableHead>
               <TableHead>Ahorros</TableHead>
+              <TableHead className="text-center">PDF</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,9 +107,8 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
                       currency: "COP"
                     }).format(report.totalExpenses)}
                   </TableCell>
-                  <TableCell className={`font-semibold ${
-                    report.balance >= 0 ? "text-green-600" : "text-red-600"
-                  }`}>
+                  <TableCell className={`font-semibold ${report.balance >= 0 ? "text-green-600" : "text-red-600"
+                    }`}>
                     {new Intl.NumberFormat("es-CO", {
                       style: "currency",
                       currency: "COP"
@@ -117,19 +121,46 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
                       year: "numeric"
                     })}
                   </TableCell>
-                  <TableCell className={`font-medium ${
-                    report.savings > 0 ? "text-blue-600" : "text-gray-600"
-                  }`}>
+                  <TableCell className={`font-medium ${report.savings > 0 ? "text-blue-600" : "text-gray-600"
+                    }`}>
                     {new Intl.NumberFormat("es-CO", {
                       style: "currency",
                       currency: "COP"
                     }).format(report.savings)}
                   </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => download(report.period)}
+                      disabled={downloadingPeriod === report.period}
+                      className="gap-1.5"
+                    >
+                      {downloadingPeriod === report.period ? (
+                        <>
+                          <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Descargando…
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                          </svg>
+                          PDF
+                        </>
+                      )}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   No se encontraron reportes en el período seleccionado.
                   <span className="text-muted-foreground">
                     {" "}Intenta ajustando los filtros de fecha.
