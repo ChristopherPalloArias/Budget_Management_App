@@ -153,11 +153,10 @@ public class ReportServiceImpl implements ReportService {
      * @return respuesta mapeada con los totales del período
      * @throws ReportNotFoundException si no existe un reporte para la combinación usuario/período
      */
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public ReportResponse getReport(String userId, String period) {
-        Report report = reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseThrow(() -> new ReportNotFoundException(userId, period));
+        Report report = findReportOrThrow(userId, period);
         return ReportMapper.toResponse(report);
     }
 
@@ -171,7 +170,7 @@ public class ReportServiceImpl implements ReportService {
      * @param pageable parámetros de paginación (page, size, sort)
      * @return respuesta paginada con la lista de reportes del usuario
      */
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public PaginatedResponse<ReportResponse> getReportsByUserId(String userId, Pageable pageable) {
         Page<Report> page = reportRepository.findByUserId(userId, pageable);
@@ -201,7 +200,7 @@ public class ReportServiceImpl implements ReportService {
      * @param endPeriod   período final del rango en formato {@code "yyyy-MM"}
      * @return resumen con totales acumulados y la lista de reportes individuales del rango
      */
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod) {
         List<Report> reports = reportRepository.findByUserIdAndPeriodBetweenOrderByPeriodAsc(
@@ -238,8 +237,12 @@ public class ReportServiceImpl implements ReportService {
     @Transactional
     @Override
     public void deleteReport(String userId, String period) {
-        Report report = reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseThrow(() -> new ReportNotFoundException(userId, period));
+        Report report = findReportOrThrow(userId, period);
         reportRepository.delete(report);
+    }
+
+    private Report findReportOrThrow(String userId, String period) {
+        return reportRepository.findByUserIdAndPeriod(userId, period)
+                .orElseThrow(() -> new ReportNotFoundException(userId, period));
     }
 }
