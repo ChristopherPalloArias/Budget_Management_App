@@ -25,7 +25,7 @@ export function TablePagination({
   pageIndex,
   totalPages,
   totalFiltered,
-  onPageChange,
+  onPageChange: _onPageChange,
   onPrevPage,
   onNextPage,
 }: TablePaginationProps) {
