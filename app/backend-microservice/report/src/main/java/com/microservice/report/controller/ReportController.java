@@ -1,6 +1,7 @@
 package com.microservice.report.controller;
 
 import com.microservice.report.dto.PaginatedResponse;
+import com.microservice.report.dto.RecalculateReportRequest;
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
 import com.microservice.report.service.ReportService;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.security.Principal;
 
 /**
@@ -69,6 +71,26 @@ public class ReportController {
             @RequestParam @ValidPeriod String endPeriod) {
         ReportSummary summary = reportService.getReportsByPeriodRange(userId, startPeriod, endPeriod);
         return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * Recalcula el reporte financiero para un usuario y período específico.
+     *
+     * <p>Este endpoint procesa una solicitud de recalculación obteniendo todas las
+     * transacciones del período y recalculando los totales de ingresos, gastos y balance.</p>
+     *
+     * <p><strong>Nota sobre idempotencia:</strong> Este endpoint no es idempotente. 
+     * Si se invoca múltiples veces con los mismos parámetros, puede producir resultados
+     * diferentes si los datos subyacentes han cambiado.</p>
+     *
+     * @param request DTO con userId y period requeridos
+     * @return Respuesta con el reporte recalculado (balance, period)
+     */
+    @PostMapping("/recalculate")
+    public ResponseEntity<ReportResponse> recalculateReport(
+            @Valid @RequestBody RecalculateReportRequest request) {
+        ReportResponse response = reportService.recalculateReport(request.getUserId(), request.getPeriod());
+        return ResponseEntity.ok(response);
     }
 
     /**
