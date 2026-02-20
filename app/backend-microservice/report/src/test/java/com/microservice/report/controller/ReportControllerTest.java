@@ -44,8 +44,8 @@ class ReportControllerTest {
         String period = "2024-03";
         String userId = "1"; // Simulación de userId obtenido por el sistema
 
-        // WHEN & THEN: El test fallará (404/405) porque el endpoint no existe aún en el controlador
-        mockMvc.perform(delete("/api/reports/{period}", period))
+        // WHEN & THEN: Se espera 204 No Content
+        mockMvc.perform(delete("/api/v1/reports/{period}", period))
                 .andExpect(status().isNoContent());
 
         // THEN: Verificar que se llame al servicio
