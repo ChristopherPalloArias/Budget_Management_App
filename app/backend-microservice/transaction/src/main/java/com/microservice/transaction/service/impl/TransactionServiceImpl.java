@@ -104,6 +104,11 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionMapper.toResponse(saved);
     }
 
+    @Override
+    public TransactionResponse update(Long id, TransactionRequest dto) {
+        throw new UnsupportedOperationException("Update not implemented yet");
+    }
+
     /**
      * Busca una transacción por su identificador único.
      *
@@ -144,4 +149,3 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
 }
-

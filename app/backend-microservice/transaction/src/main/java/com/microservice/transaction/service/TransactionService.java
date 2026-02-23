@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 public interface TransactionService {
     TransactionResponse create(TransactionRequest transactionRequest);
 
+    TransactionResponse update(Long id, TransactionRequest transactionRequest);
+
     TransactionResponse getById(Long id);
 
     PaginatedResponse<TransactionResponse> getAll(Pageable pageable);
