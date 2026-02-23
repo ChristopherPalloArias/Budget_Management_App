@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./app/backend-microservice/report
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./app/backend-microservice/report/src:/app/src
+      - ./app/backend-microservice/report/target:/app/target
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_USERNAME=dev_user
+      - DB_PASSWORD=dev_password
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
