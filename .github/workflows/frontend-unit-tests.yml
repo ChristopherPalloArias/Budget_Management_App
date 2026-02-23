@@ -30,13 +30,14 @@ jobs:
         run: pnpm install --no-frozen-lockfile
         working-directory: app/Frontend
 
-      # Step 3.1: Install ts-node for Jest TypeScript support
-      - name: Install ts-node
-        run: pnpm add ts-node --global
+      # Step 3.1: Install ts-node locally for Jest TypeScript support
+      - name: Install ts-node locally
+        run: pnpm add ts-node --save-dev
+        working-directory: app/Frontend
 
       # Step 4: Run unit tests
       - name: Run unit tests
-        run: pnpm test -- --watchAll=false --passWithNoTests
+        run: pnpm exec jest -- --watchAll=false --passWithNoTests
         working-directory: app/Frontend
 
       # Step 5: Upload test results as artifact
