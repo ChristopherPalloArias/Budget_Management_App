@@ -418,7 +418,7 @@ Funcionalidad: Descarga de Reporte en PDF
 | Principio | Justificación |
 |---|---|
 | **Independiente** | La descarga del resumen por rango es independiente de la descarga individual de un período. |
-| **Negociable** | El nivel de detalle del resumen (por período o solo totales acumulados), el diseño y los campos del PDF son negociables. |
+| **Negociable** | El nivel de detalle del resumen (por período o solo totales acumululados), el diseño y los campos del PDF son negociables. |
 | **Valiosa** | Permite obtener una visión consolidada del desempeño financiero en un intervalo más amplio, ideal para revisiones trimestrales o anuales. |
 | **Estimable** | Operación acotada: selección de rango → generación del documento → descarga. |
 | **Pequeña** | Extiende la lógica de descarga individual a un rango de períodos; bien delimitada. |
@@ -472,6 +472,126 @@ Funcionalidad: Descarga de Resumen de Reportes por Rango en PDF
 
 ---
 
+### 📦 Funcionalidad 4: Actualización de Transacciones y Sincronización de Reportes
+
+---
+
+#### US-023 — Actualización de Transacción Existente
+
+**Descripción:**
+
+> Como **Usuario Registrado**,
+> quiero **modificar los detalles de una transacción previamente registrada (monto, categoría, descripción o fecha)**,
+> para **corregir errores de entrada y mantener mi historial financiero preciso.**
+
+**Criterios de Aceptación (Gherkin):**
+
+```gherkin
+Funcionalidad: Actualización de Transacción Existente
+
+  Escenario: Actualización exitosa de monto y categoría
+    Dado que soy un usuario autenticado y poseo una transacción con ID uuid-123
+    Y el microservicio "Transactions" está operativo
+    Cuando envío una solicitud PUT a /api/v1/transactions/uuid-123 con el nuevo amount: 150.00 y category: "Alimentación"
+    Entonces el sistema debe responder con un código 200 OK
+    Y los datos deben persistirse en la base de datos de transacciones
+    Y se debe publicar un evento transaction.updated en el broker RabbitMQ con el estado anterior y el nuevo.
+
+  Escenario: Intento de actualizar una transacción inexistente
+    Dado que envío una solicitud PUT a /api/v1/transactions/uuid-999 (ID no registrado)
+    Cuando se procesa la petición
+    Entonces el sistema debe devolver un error 404 Not Found
+    Y no se debe emitir ningún evento al bus de mensajería.
+
+  Escenario: Validación de datos de entrada
+    Dado que intento actualizar una transacción con un amount negativo
+    Cuando envío la solicitud
+    Entonces el sistema debe responder con un código 400 Bad Request
+    Y un mensaje indicando que el monto debe ser mayor a cero.
+```
+
+**Validación INVEST:**
+
+| Principio | Justificación |
+|---|---|
+| **Independiente** | Se puede desarrollar y probar el endpoint de actualización sin esperar a que el consumidor del evento (Reports) procese la información. |
+| **Negociable** | Se pueden definir qué campos son editables (ej. ¿se debe permitir cambiar la fecha a meses ya cerrados?). |
+| **Valiosa** | Sin ella, el usuario no tiene capacidad de corrección, lo que degrada la calidad de sus reportes. |
+| **Estimable** | Operación CRUD estándar con integración de mensajería (RabbitMQ). |
+| **Pequeña** | Se enfoca exclusivamente en la mutación de un recurso existente. |
+| **Testeable** | Mediante pruebas de integración (RestAssured/MockMvc) y verificación de mensajes en la cola. |
+
+**Notas Técnicas:**
+
+- **Endpoint REST:** PUT /api/v1/transactions/{transactionId}
+- **Consideraciones de Docker:** El contenedor debe tener acceso a las variables de entorno para la conexión con el exchange de RabbitMQ (RABBIT_HOST, RABBIT_PORT).
+
+**Dependencias técnicas:**
+
+- **Idempotencia:** La operación PUT debe ser idempotente.
+- **RabbitMQ:** El evento publicado debe incluir el userId y el period (mes/año) para que el microservicio de Reportes sepa qué agregación debe recalcular.
+- **Kubernetes:** El ConfigMap del despliegue debe estar actualizado con las credenciales de la DB y el Broker.
+
+---
+
+#### US-024 — Sincronización de Reporte por Actualización de Transacción
+
+**Descripción:**
+
+> Como **Microservicio de Reportes**,
+> quiero **consumir los eventos de actualización de transacciones desde RabbitMQ**,
+> para **recalcular automáticamente los totales de ingresos, gastos y balance del usuario afectado.**
+
+**Criterios de Aceptación (Gherkin):**
+
+```gherkin
+Funcionalidad: Sincronización de Reporte por Actualización de Transacción
+
+  Escenario: Recalculación exitosa tras cambio de monto
+    Dado que el ReportConsumer está suscrito a la cola transaction-updated-queue
+    Y llega un evento con userId: "usr-45", period: "2025-03", oldAmount: 100.00 y newAmount: 150.00
+    Cuando el microservicio procesa el mensaje
+    Entonces debe buscar el reporte correspondiente al usuario y período en la reports_db
+    Y actualizar el campo totalExpense (o totalIncome) restando el valor viejo y sumando el nuevo
+    Y actualizar el balance final del reporte.
+
+  Escenario: Cambio de período (fecha) en la transacción
+    Dado que el evento indica que una transacción se movió del mes "2025-03" al "2025-04"
+    Cuando el microservicio procesa el mensaje
+    Entonces debe restar el monto del reporte de Marzo
+    Y sumar el monto al reporte de Abril
+    Y si el reporte de Abril no existe, debe disparar la lógica de creación de un nuevo reporte.
+
+  Escenario: Manejo de errores y reintentos (Dead Letter Queue)
+    Dado que el evento llega con un formato de fecha inválido o userId nulo
+    Cuando el consumidor intenta procesar el mensaje y falla
+    Entonces el sistema no debe confirmar (ACK) el mensaje
+    Y tras 3 reintentos fallidos, debe enviar el mensaje a la DLQ (Dead Letter Queue) para auditoría.
+```
+
+**Validación INVEST:**
+
+| Principio | Justificación |
+|---|---|
+| **Independiente** | El consumidor solo depende de la estructura del mensaje, no de si el servicio de transacciones está activo en ese instante exacto. |
+| **Negociable** | Se puede negociar si el reporte se recalcula sumando/restando la diferencia o haciendo un SUM() total a la base de datos de transacciones. |
+| **Valiosa** | Asegura que los gráficos y KPIs del usuario sean verídicos tras una edición. |
+| **Estimable** | Requiere lógica de manejo de mensajes y operaciones atómicas en base de datos. |
+| **Pequeña** | Se limita a la reacción ante un evento específico de actualización. |
+| **Testeable** | Se puede testear enviando un mensaje manual a la cola y verificando el estado de la DB de reportes. |
+
+**Notas Técnicas:**
+
+- **Tecnología Involucrada:** Spring RabbitListener (o similar), Transaccionalidad @Transactional.
+- **Consideraciones de Docker:** El contenedor del microservicio de Reportes debe tener configurado el prefetch count para no saturarse si hay actualizaciones masivas.
+
+**Dependencias técnicas:**
+
+- **Consistencia Eventual:** El usuario debe ser consciente (vía UI) de que el reporte puede tardar unos segundos en reflejar el cambio.
+- **Kubernetes:** Configurar Horizontal Pod Autoscaler (HPA) basado en el tamaño de la cola de RabbitMQ si el volumen de actualizaciones crece.
+
+---
+
 ## 3. Resumen de Historias de Usuario Definidas
 
 | ID | Título | Funcionalidad | Prioridad Sugerida |
@@ -482,6 +602,8 @@ Funcionalidad: Descarga de Resumen de Reportes por Rango en PDF
 | US-020 | Notificación de diferencia tras recalculación | Actualización | Media |
 | US-021 | Descargar reporte de un período como PDF | Descarga PDF | Alta |
 | US-022 | Descargar resumen de rango de períodos como PDF | Descarga PDF | Media |
+| US-023 | Actualización de transacción existente | Actualización de Transacciones | Alta |
+| US-024 | Sincronización de reporte por actualización de transacción | Sincronización de Reportes | Alta |
 
 ---
 
@@ -496,6 +618,9 @@ US-021 (Descargar PDF — Período Individual)
 
 US-017 (Eliminar Reporte Individual)
   └── US-018 (Eliminar por Rango)  ← Extiende US-017
+
+US-023 (Actualización de Transacción Existente)
+  └── US-024 (Sincronización de Reporte)  ← Depende de US-023
 ```
 
 ---
