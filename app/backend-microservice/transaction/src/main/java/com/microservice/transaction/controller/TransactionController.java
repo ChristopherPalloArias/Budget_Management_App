@@ -41,4 +41,12 @@ public class TransactionController {
         PaginatedResponse<TransactionResponse> transactions = transactionService.getAll(pageable);
         return ResponseEntity.ok(transactions);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TransactionResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody TransactionRequest dto) {
+        TransactionResponse updated = transactionService.updateTransaction(id, dto);
+        return ResponseEntity.ok(updated);
+    }
 }

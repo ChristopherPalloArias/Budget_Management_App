@@ -2,9 +2,10 @@ package com.microservice.transaction.controller;
 
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
-import com.microservice.transaction.exception.EntityNotFoundException;
+import com.microservice.transaction.exception.NotFoundException;
 import com.microservice.transaction.model.TransactionType;
 import com.microservice.transaction.service.TransactionService;
+import com.microservice.transaction.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,11 +43,17 @@ class TransactionControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(transactionController).build();
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+
+        mockMvc = MockMvcBuilders.standaloneSetup(transactionController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setValidator(validator)
+                .build();
     }
 
     @Test
-    @DisplayName("update — Happy Path: retorna 200 OK y delega al servicio")
+    @DisplayName("update — happy path: returns 200 OK and delegates to service")
     void shouldUpdateTransactionSuccessfully_andPublishEvent() throws Exception {
         Long transactionId = 123L;
         TransactionResponse response = new TransactionResponse(
@@ -59,7 +67,7 @@ class TransactionControllerTest {
                 OffsetDateTime.parse("2025-03-10T10:00:00-05:00")
         );
 
-        when(transactionService.update(eq(transactionId), any(TransactionRequest.class)))
+        when(transactionService.updateTransaction(eq(transactionId), any(TransactionRequest.class)))
                 .thenReturn(response);
 
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
@@ -74,16 +82,16 @@ class TransactionControllerTest {
                                 + "}"))
                 .andExpect(status().isOk());
 
-        verify(transactionService).update(eq(transactionId), any(TransactionRequest.class));
+        verify(transactionService).updateTransaction(eq(transactionId), any(TransactionRequest.class));
     }
 
     @Test
-    @DisplayName("update — Not Found: retorna 404 cuando la transaccion no existe")
+    @DisplayName("update — not found: returns 404 when transaction does not exist")
     void shouldReturn404_whenTransactionNotFound() throws Exception {
         Long transactionId = 999L;
 
-        when(transactionService.update(eq(transactionId), any(TransactionRequest.class)))
-                .thenThrow(new EntityNotFoundException("Transaction not found"));
+        when(transactionService.updateTransaction(eq(transactionId), any(TransactionRequest.class)))
+                .thenThrow(new NotFoundException("Transaction not found"));
 
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,11 +105,11 @@ class TransactionControllerTest {
                                 + "}"))
                 .andExpect(status().isNotFound());
 
-        verify(transactionService).update(eq(transactionId), any(TransactionRequest.class));
+        verify(transactionService).updateTransaction(eq(transactionId), any(TransactionRequest.class));
     }
 
     @Test
-    @DisplayName("update — Bad Request: retorna 400 cuando el monto es negativo")
+    @DisplayName("update — bad request: returns 400 when amount is negative")
     void shouldReturn400_whenAmountIsNegative() throws Exception {
         Long transactionId = 123L;
 

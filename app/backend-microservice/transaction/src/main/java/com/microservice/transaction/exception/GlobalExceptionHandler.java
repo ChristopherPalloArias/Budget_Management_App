@@ -12,6 +12,26 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<CustomErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
+        CustomErrorResponse body = CustomErrorResponse.builder()
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .dateTime(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<CustomErrorResponse> handleValidation(ValidationException ex, HttpServletRequest request) {
+        CustomErrorResponse body = CustomErrorResponse.builder()
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .dateTime(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<CustomErrorResponse> handleNotFound(EntityNotFoundException ex, HttpServletRequest request) {
         CustomErrorResponse body = CustomErrorResponse.builder()

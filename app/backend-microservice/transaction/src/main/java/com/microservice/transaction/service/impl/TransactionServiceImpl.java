@@ -7,7 +7,9 @@ import com.microservice.transaction.dto.TransactionMapper;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
 import com.microservice.transaction.event.TransactionCreatedEvent;
-import com.microservice.transaction.exception.EntityNotFoundException;
+import com.microservice.transaction.event.TransactionUpdatedEvent;
+import com.microservice.transaction.exception.NotFoundException;
+import com.microservice.transaction.exception.ValidationException;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -105,8 +107,24 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionResponse update(Long id, TransactionRequest dto) {
-        throw new UnsupportedOperationException("Update not implemented yet");
+    public TransactionResponse updateTransaction(Long id, TransactionRequest dto) {
+        if (dto.amount().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Amount must be greater than zero");
+        }
+
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        existing.setUserId(dto.userId());
+        existing.setType(dto.type());
+        existing.setAmount(dto.amount());
+        existing.setCategory(dto.category());
+        existing.setDate(dto.date());
+        existing.setDescription(dto.description());
+
+        Transaction saved = transactionRepository.save(existing);
+        eventPublisher.publishEvent(new TransactionUpdatedEvent(this, saved));
+        return TransactionMapper.toResponse(saved);
     }
 
     /**
@@ -119,7 +137,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public TransactionResponse getById(Long id) {
         Transaction found = transactionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
         return TransactionMapper.toResponse(found);
     }
 
