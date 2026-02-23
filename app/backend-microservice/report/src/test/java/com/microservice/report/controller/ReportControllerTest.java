@@ -42,7 +42,7 @@ class ReportControllerTest {
     void deleteReport_ShouldReturnNoContent_WhenSuccessful() throws Exception {
         // GIVEN
         String period = "2024-03";
-        String userId = "1"; // Simulación de userId obtenido por el sistema
+        String userId = "QHlms0DALUgLnnXMffUBMP14v5m1"; // Fallback userId when principal is null
 
         // WHEN & THEN: Se espera 204 No Content
         mockMvc.perform(delete("/api/v1/reports/{period}", period))

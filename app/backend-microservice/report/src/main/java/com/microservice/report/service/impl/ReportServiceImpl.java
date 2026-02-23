@@ -317,11 +317,39 @@ public class ReportServiceImpl implements ReportService {
         reportRepository.delete(report);
     }
 
-    private Report findReportOrThrow(String userId, String period) {
-        return reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseThrow(() -> new ReportNotFoundException(userId, period));
+    /**
+     * Elimina un reporte financiero por su ID.
+     *
+     * <p>Este método valida que el reporte exista y pertenezca al usuario
+     * antes de eliminarlo. Si el reporte no existe o no pertenece al usuario,
+     * lanza {@link ReportNotFoundException}.</p>
+     *
+     * @param userId identificador del usuario propietario del reporte
+     * @param reportId identificador único del reporte
+     * @throws ReportNotFoundException si el reporte no existe o no pertenece al usuario
+     * @throws IllegalArgumentException si userId o reportId son inválidos
+     */
+    @Transactional
+    @Override
+    public void deleteReportById(String userId, Long reportId) {
+        validateUserId(userId);
+        if (reportId == null || reportId <= 0) {
+            throw new IllegalArgumentException("reportId must be a positive number");
+        }
+
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new ReportNotFoundException(
+                        String.format("Report not found with id: %d", reportId)));
+
+        if (!report.getUserId().equals(userId)) {
+            throw new ReportNotFoundException(
+                    String.format("Report with id %d does not belong to user %s", reportId, userId));
+        }
+
+        reportRepository.delete(report);
     }
-}
+
+    /**
      * Record inmutable para encapsular totales acumulados.
      */
     private record AccumulatedTotals(BigDecimal totalIncome, BigDecimal totalExpense) {
@@ -362,8 +390,7 @@ public class ReportServiceImpl implements ReportService {
         validateUserId(userId);
         validatePeriod(period);
         return reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseThrow(() -> new ReportNotFoundException(
-                        String.format("El reporte no existe para el período: %s", period)));
+                .orElseThrow(() -> new ReportNotFoundException(userId, period));
     }
 
     /**
@@ -387,8 +414,8 @@ public class ReportServiceImpl implements ReportService {
             throw new IllegalArgumentException("period cannot be null");
         }
         if (!PERIOD_PATTERN.matcher(period).matches()) {
-            throw new ReportNotFoundException(
-                    String.format("El reporte no existe para el período: %s", period));
+            throw new IllegalArgumentException(
+                    String.format("Invalid period format: %s. Expected format: yyyy-MM", period));
         }
     }
 

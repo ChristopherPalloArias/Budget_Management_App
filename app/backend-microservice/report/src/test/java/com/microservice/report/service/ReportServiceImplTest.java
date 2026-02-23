@@ -38,7 +38,7 @@ class ReportServiceImplTest {
         userId = "user123";
         period = "2024-03";
         mockReport = new Report();
-        mockReport.setId(1L);
+        mockReport.setReportId(1L);
         mockReport.setUserId(userId);
         mockReport.setPeriod(period);
     }
