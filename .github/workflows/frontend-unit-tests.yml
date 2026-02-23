@@ -12,27 +12,32 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: app/Frontend
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
           cache-dependency-path: app/Frontend/pnpm-lock.yaml
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: corepack prepare pnpm@latest --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: app/Frontend
 
       - name: Run unit tests
         run: pnpm exec jest --ci --coverage --passWithNoTests
-        working-directory: app/Frontend
 
       - name: Upload test results
         if: always()
@@ -43,4 +48,3 @@ jobs:
             coverage/
             test-results/
           if-no-files-found: ignore
-          working-directory: app/Frontend
