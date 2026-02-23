@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(pnpm install:*)",
-      "Bash(docker compose up:*)"
+      "Bash(docker compose up:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(mvn.cmd clean compile:*)",
+      "Bash(Select-Object -Last 30)",
+      "Bash(where:*)",
+      "Bash(git add:*)"
     ]
   }
 }

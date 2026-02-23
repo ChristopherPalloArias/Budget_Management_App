@@ -106,13 +106,13 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response, "ReportResponse no debe ser null");
-        assertEquals(userId, response.getUserId());
-        assertEquals(period, response.getPeriod());
-        assertEquals(0, response.getTotalIncome().compareTo(BigDecimal.valueOf(1200)),
+        assertEquals(userId, response.userId());
+        assertEquals(period, response.period());
+        assertEquals(0, response.totalIncome().compareTo(BigDecimal.valueOf(1200)),
                 "totalIncome debe ser recalculado correctamente");
-        assertEquals(0, response.getTotalExpense().compareTo(BigDecimal.valueOf(200)),
+        assertEquals(0, response.totalExpense().compareTo(BigDecimal.valueOf(200)),
                 "totalExpense debe ser recalculado correctamente");
-        assertEquals(0, response.getBalance().compareTo(BigDecimal.valueOf(1000)),
+        assertEquals(0, response.balance().compareTo(BigDecimal.valueOf(1000)),
                 "balance debe ser recalculado como (income - expense)");
 
         // Verify
@@ -154,11 +154,11 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(0, response.getTotalIncome().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.totalIncome().compareTo(BigDecimal.ZERO),
                 "totalIncome debe permanecer en ZERO si no hay transacciones");
-        assertEquals(0, response.getTotalExpense().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.totalExpense().compareTo(BigDecimal.ZERO),
                 "totalExpense debe permanecer en ZERO si no hay transacciones");
-        assertEquals(0, response.getBalance().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.balance().compareTo(BigDecimal.ZERO),
                 "balance debe permanecer en ZERO si no hay transacciones");
 
         // Verify
@@ -229,11 +229,11 @@ class ReportServiceImplTest {
         assertNotNull(response1);
         assertNotNull(response2);
 
-        assertEquals(response1.getTotalIncome(), response2.getTotalIncome(),
+        assertEquals(response1.totalIncome(), response2.totalIncome(),
                 "totalIncome debe ser idéntico en múltiples recalculaciones");
-        assertEquals(response1.getTotalExpense(), response2.getTotalExpense(),
+        assertEquals(response1.totalExpense(), response2.totalExpense(),
                 "totalExpense debe ser idéntico en múltiples recalculaciones");
-        assertEquals(response1.getBalance(), response2.getBalance(),
+        assertEquals(response1.balance(), response2.balance(),
                 "balance debe ser idéntico en múltiples recalculaciones");
 
         // Verify: reportRepository.save() debe ser llamado 2 veces (una por cada recalculación)
@@ -273,9 +273,9 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(0, response.getBalance().compareTo(BigDecimal.valueOf(-700)),
+        assertEquals(0, response.balance().compareTo(BigDecimal.valueOf(-700)),
                 "balance debe ser negativo cuando gastos > ingresos");
-        assertTrue(response.getBalance().compareTo(BigDecimal.ZERO) < 0,
+        assertTrue(response.balance().compareTo(BigDecimal.ZERO) < 0,
                 "balance debe ser menor que cero");
 
         // Verify
@@ -294,19 +294,15 @@ class ReportServiceImplTest {
         String userId = null;
         String period = "2025-11";
 
-        // Mock: NPE esperado cuando userId es null
-        when(reportRepository.findByUserIdAndPeriod(userId, period))
-                .thenThrow(new IllegalArgumentException("userId cannot be null"));
-
-        // When & Then (Act & Assert)
+        // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
                 () -> reportService.recalculateReport(userId, period),
                 "Debe lanzar IllegalArgumentException cuando userId es null"
         );
 
-        // Verify
-        verify(reportRepository).findByUserIdAndPeriod(userId, period);
+        // Verify - No repository interaction because validation happens first
+        verify(reportRepository, never()).findByUserIdAndPeriod(any(), any());
         verify(reportRepository, never()).save(any(Report.class));
     }
 
@@ -325,19 +321,15 @@ class ReportServiceImplTest {
         String userId = "user-500";
         String invalidPeriod = "2025-13"; // Mes inválido (13)
 
-        // Mock: repository puede lanzar excepción o retornar empty
-        when(reportRepository.findByUserIdAndPeriod(userId, invalidPeriod))
-                .thenReturn(Optional.empty());
-
-        // When & Then (Act & Assert)
+        // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
-                ReportNotFoundException.class,
+                IllegalArgumentException.class,
                 () -> reportService.recalculateReport(userId, invalidPeriod),
-                "Debe lanzar ReportNotFoundException para período inválido"
+                "Debe lanzar IllegalArgumentException para período inválido"
         );
 
-        // Verify
-        verify(reportRepository).findByUserIdAndPeriod(userId, invalidPeriod);
+        // Verify - No repository interaction because validation happens first
+        verify(reportRepository, never()).findByUserIdAndPeriod(any(), any());
         verify(reportRepository, never()).save(any(Report.class));
     }
 
@@ -348,19 +340,15 @@ class ReportServiceImplTest {
         String userId = "user-501";
         String malformedPeriod = "invalid-format";
 
-        // Mock: repository retorna empty para formato incorrecto
-        when(reportRepository.findByUserIdAndPeriod(userId, malformedPeriod))
-                .thenReturn(Optional.empty());
-
-        // When & Then (Act & Assert)
+        // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
-                ReportNotFoundException.class,
+                IllegalArgumentException.class,
                 () -> reportService.recalculateReport(userId, malformedPeriod),
-                "Debe lanzar ReportNotFoundException para período malformado"
+                "Debe lanzar IllegalArgumentException para período malformado"
         );
 
-        // Verify
-        verify(reportRepository).findByUserIdAndPeriod(userId, malformedPeriod);
+        // Verify - No repository interaction because validation happens first
+        verify(reportRepository, never()).findByUserIdAndPeriod(any(), any());
         verify(reportRepository, never()).save(any(Report.class));
     }
 
@@ -371,19 +359,15 @@ class ReportServiceImplTest {
         String userId = "user-502";
         String period = null;
 
-        // Mock: repository lanza excepción cuando period es null
-        when(reportRepository.findByUserIdAndPeriod(userId, period))
-                .thenThrow(new IllegalArgumentException("period cannot be null"));
-
-        // When & Then (Act & Assert)
+        // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
                 () -> reportService.recalculateReport(userId, period),
                 "Debe lanzar IllegalArgumentException cuando period es null"
         );
 
-        // Verify
-        verify(reportRepository).findByUserIdAndPeriod(userId, period);
+        // Verify - No repository interaction because validation happens first
+        verify(reportRepository, never()).findByUserIdAndPeriod(any(), any());
         verify(reportRepository, never()).save(any(Report.class));
     }
 
@@ -428,11 +412,11 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(0, response.getTotalIncome().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.totalIncome().compareTo(BigDecimal.ZERO),
                 "totalIncome debe ser ZERO cuando todas las transacciones son $0");
-        assertEquals(0, response.getTotalExpense().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.totalExpense().compareTo(BigDecimal.ZERO),
                 "totalExpense debe ser ZERO cuando todas las transacciones son $0");
-        assertEquals(0, response.getBalance().compareTo(BigDecimal.ZERO),
+        assertEquals(0, response.balance().compareTo(BigDecimal.ZERO),
                 "balance debe ser ZERO");
 
         // Verify
@@ -477,11 +461,11 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertTrue(response.getTotalIncome().compareTo(new BigDecimal("9999999999.99")) == 0,
+        assertTrue(response.totalIncome().compareTo(new BigDecimal("9999999999.99")) == 0,
                 "totalIncome debe manejar montos muy grandes correctamente");
-        assertTrue(response.getTotalExpense().compareTo(new BigDecimal("5000000000.00")) == 0,
+        assertTrue(response.totalExpense().compareTo(new BigDecimal("5000000000.00")) == 0,
                 "totalExpense debe manejar montos muy grandes correctamente");
-        assertTrue(response.getBalance().compareTo(BigDecimal.ZERO) > 0,
+        assertTrue(response.balance().compareTo(BigDecimal.ZERO) > 0,
                 "balance debe ser positivo con grandes montos");
 
         // Verify
@@ -535,11 +519,11 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(0, response.getTotalIncome().compareTo(expectedIncome),
+        assertEquals(0, response.totalIncome().compareTo(expectedIncome),
                 "totalIncome debe manejar suma de muchas transacciones");
-        assertEquals(0, response.getTotalExpense().compareTo(expectedExpense),
+        assertEquals(0, response.totalExpense().compareTo(expectedExpense),
                 "totalExpense debe manejar suma de muchas transacciones");
-        assertEquals(0, response.getBalance().compareTo(expectedBalance),
+        assertEquals(0, response.balance().compareTo(expectedBalance),
                 "balance debe calcularse correctamente con muchas transacciones");
 
         // Verify
@@ -584,19 +568,19 @@ class ReportServiceImplTest {
         assertNotNull(response2);
         assertNotNull(response3);
 
-        assertEquals(response1.getTotalIncome(), response2.getTotalIncome(),
+        assertEquals(response1.totalIncome(), response2.totalIncome(),
                 "totalIncome debe ser idéntico en recalculación 1 y 2");
-        assertEquals(response2.getTotalIncome(), response3.getTotalIncome(),
+        assertEquals(response2.totalIncome(), response3.totalIncome(),
                 "totalIncome debe ser idéntico en recalculación 2 y 3");
 
-        assertEquals(response1.getTotalExpense(), response2.getTotalExpense(),
+        assertEquals(response1.totalExpense(), response2.totalExpense(),
                 "totalExpense debe ser idéntico en recalculación 1 y 2");
-        assertEquals(response2.getTotalExpense(), response3.getTotalExpense(),
+        assertEquals(response2.totalExpense(), response3.totalExpense(),
                 "totalExpense debe ser idéntico en recalculación 2 y 3");
 
-        assertEquals(response1.getBalance(), response2.getBalance(),
+        assertEquals(response1.balance(), response2.balance(),
                 "balance debe ser idéntico en recalculación 1 y 2");
-        assertEquals(response2.getBalance(), response3.getBalance(),
+        assertEquals(response2.balance(), response3.balance(),
                 "balance debe ser idéntico en recalculación 2 y 3");
 
         // Verify: 3 llamadas a findByUserIdAndPeriod y 3 a save
@@ -641,8 +625,8 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(userId, response.getUserId());
-        assertEquals(period, response.getPeriod());
+        assertEquals(userId, response.userId());
+        assertEquals(period, response.period());
 
         // Verify: 2 llamadas a findByUserIdAndPeriod y 2 a save
         verify(reportRepository, times(2)).findByUserIdAndPeriod(userId, period);
@@ -680,8 +664,8 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(period, response.getPeriod());
-        assertEquals(userId, response.getUserId());
+        assertEquals(period, response.period());
+        assertEquals(userId, response.userId());
 
         // Verify
         verify(reportRepository).findByUserIdAndPeriod(userId, period);
@@ -715,8 +699,8 @@ class ReportServiceImplTest {
 
         // Then (Assert)
         assertNotNull(response);
-        assertEquals(period, response.getPeriod());
-        assertEquals(userId, response.getUserId());
+        assertEquals(period, response.period());
+        assertEquals(userId, response.userId());
 
         // Verify
         verify(reportRepository).findByUserIdAndPeriod(userId, period);

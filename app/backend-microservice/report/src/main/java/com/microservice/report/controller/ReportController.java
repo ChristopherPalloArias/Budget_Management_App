@@ -94,26 +94,41 @@ public class ReportController {
     }
 
     /**
+     * Elimina permanentemente un reporte por su ID para el usuario autenticado.
+     * Acepta solo IDs numéricos (ej: 1, 2, 3).
+     *
+     * @param reportId  ID del reporte a eliminar
+     * @param principal Información de autenticación inyectada
+     */
+    @DeleteMapping("/{reportId:[0-9]+}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteReportById(@PathVariable Long reportId, Principal principal) {
+        String userId = getAuthenticatedUserId(principal);
+        reportService.deleteReportById(userId, reportId);
+    }
+
+    /**
      * Elimina permanentemente el reporte de un periodo para el usuario autenticado.
+     * Acepta solo períodos en formato yyyy-MM (ej: 2026-02).
      *
      * @param period    Periodo a eliminar (yyyy-MM)
      * @param principal Información de autenticación inyectada
      */
-    @DeleteMapping("/{period}")
+    @DeleteMapping("/{period:[0-9]{4}-[0-9]{2}}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteReport(@PathVariable @ValidPeriod String period, Principal principal) {
+    public void deleteReport(@PathVariable String period, Principal principal) {
         String userId = getAuthenticatedUserId(principal);
         reportService.deleteReport(userId, period);
     }
 
     /**
      * Extrae el identificador de usuario de forma segura.
-     * 
+     *
      * @param principal Identidad del usuario
      * @return El ID del usuario actual
      */
     private String getAuthenticatedUserId(Principal principal) {
-        // En producción se obtiene del Principal. Se mantiene fallback a "1" para tests.
-        return (principal != null) ? principal.getName() : "1";
+        // En producción se obtiene del Principal. Se mantiene fallback para tests.
+        return (principal != null) ? principal.getName() : "QHlms0DALUgLnnXMffUBMP14v5m1";
     }
 }

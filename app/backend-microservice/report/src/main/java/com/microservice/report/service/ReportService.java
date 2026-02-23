@@ -19,4 +19,8 @@ public interface ReportService {
     ReportSummary getReportsByPeriodRange(String userId, String startPeriod, String endPeriod);
 
     void deleteReport(String userId, String period);
+
+    void deleteReportById(String userId, Long reportId);
+
+    ReportResponse recalculateReport(String userId, String period);
 }

@@ -65,7 +65,7 @@ export const deleteReport = async (id: string | number): Promise<void> => {
     await reportsHttpClient.delete(`/v1/reports/${id}`);
 };
 export const recalculateReport = async (userId: string, period: string): Promise<RecalculateReportResponse> => {
-    const endpoint = '/reports/recalculate';
+    const endpoint = 'v1/reports/recalculate';
     const body: RecalculateReportRequest = {
         userId,
         period,
