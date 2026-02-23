@@ -17,21 +17,18 @@ jobs:
         working-directory: app/Frontend
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: app/Frontend/pnpm-lock.yaml
 
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Install pnpm
-        run: corepack prepare pnpm@latest --activate
+      - name: Prepare pnpm
+        run: corepack prepare pnpm@9 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
