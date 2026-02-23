@@ -1,0 +1,90 @@
+name: Reusable Security Workflow
+
+on:
+  workflow_call:
+    inputs:
+      backend-dir:
+        required: true
+        type: string
+      frontend-dir:
+        required: true
+        type: string
+      java-version:
+        required: false
+        type: string
+        default: '17'
+      node-version:
+        required: false
+        type: string
+        default: '19.2'
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SONAR_HOST_URL:
+        required: true
+
+jobs:
+  scan:
+    name: Security Scan & Sonar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'javascript,typescript'
+          queries: 'security-and-quality'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'temurin'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        run: npm install -g pnpm
+
+      - name: Build for Analysis
+        run: |
+          mvn clean package -DskipTests -f ${{ inputs.backend-dir }}/pom.xml
+          cd ${{ inputs.frontend-dir }} && pnpm install --no-frozen-lockfile && pnpm run build
+        continue-on-error: true
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+      - name: SonarCloud Analysis
+        run: >
+          mvn -B -DskipTests sonar:sonar
+          -Dsonar.projectKey=majoymajo_Budget_Management_App
+          -Dsonar.organization=majoymajo
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          -f ${{ inputs.backend-dir }}/pom.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: SonarCloud Frontend Scan
+        uses: sonarsource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=majoymajo_Budget_Management_App
+            -Dsonar.organization=majoymajo
+            -Dsonar.sources=${{ inputs.frontend-dir }}
+            -Dsonar.javascript.lcov.reportPaths=${{ inputs.frontend-dir }}/coverage/lcov.info
+            -Dsonar.exclusions=${{ inputs.frontend-dir }}/node_modules/**,${{ inputs.frontend-dir }}/dist/**
