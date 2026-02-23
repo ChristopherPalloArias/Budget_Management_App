@@ -1,0 +1,114 @@
+name: CI - Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '19.2'
+
+jobs:
+  detect:
+    name: Detect Project Structure
+    runs-on: ubuntu-latest
+    outputs:
+      has_backend: ${{ steps.detect.outputs.has_backend }}
+      pom_dir: ${{ steps.detect.outputs.pom_dir }}
+      has_frontend: ${{ steps.detect.outputs.has_frontend }}
+      frontend_dir: './app/Frontend'
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        run: |
+          if find . -name 'pom.xml' -not -path '*/target/*' | grep -q .; then
+            POM_PATH=$(find . -name 'pom.xml' -not -path '*/target/*' | head -1)
+            echo "has_backend=true" >> "$GITHUB_OUTPUT"
+            echo "pom_dir=$(dirname "$POM_PATH")" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_backend=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f "app/Frontend/package.json" ]; then
+            echo "has_frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  backend:
+    needs: detect
+    if: needs.detect.outputs.has_backend == 'true'
+    uses: ./.github/workflows/reusable-backend.yml
+    with:
+      java-version: '17'
+      pom-dir: ${{ needs.detect.outputs.pom_dir }}
+
+  frontend:
+    needs: detect
+    if: needs.detect.outputs.has_frontend == 'true'
+    uses: ./.github/workflows/reusable-frontend.yml
+    with:
+      node-version: '19.2'
+      frontend-dir: ${{ needs.detect.outputs.frontend_dir }}
+
+  security:
+    needs: [detect, backend, frontend]
+    uses: ./.github/workflows/reusable-security.yml
+    with:
+      backend-dir: ${{ needs.detect.outputs.pom_dir }}
+      frontend-dir: ${{ needs.detect.outputs.frontend_dir }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    needs: [detect, backend, frontend, security]
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '19.2'
+
+      - name: Build All
+        run: |
+          mvn clean package -DskipTests -f ${{ needs.detect.outputs.pom_dir }}/pom.xml
+          cd ${{ needs.detect.outputs.frontend_dir }} && npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm run build
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-build-package
+          path: |
+            ${{ needs.detect.outputs.pom_dir }}/target/*.jar
+            ${{ needs.detect.outputs.frontend_dir }}/dist/
+
+  report:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, security, build]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🚀 CI/CD Pipeline Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Status Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY

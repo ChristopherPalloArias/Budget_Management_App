@@ -134,7 +134,84 @@ _Access the application at `http://localhost:5173` (or as specified by Vite)._
 
 ---
 
-## ✨ Key Features
+## Running the Application with Docker Compose
+
+This project supports two environments: **Development** and **Production**. Follow the instructions below to set up and run the application in each environment.
+
+### Prerequisites
+
+1. Install [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/).
+2. Ensure the required environment variables are set for production:
+   - `DB_USERNAME`
+   - `DB_PASSWORD`
+
+### Development Environment
+
+The development environment is optimized for local development with hot-reloading and volume mounts.
+
+#### Steps to Run:
+
+1. Navigate to the project root directory.
+2. Run the following command:
+
+   ```bash
+   docker-compose -f docker-compose.dev.yml up --build
+   ```
+
+3. Access the backend service at `http://localhost:8082`.
+
+#### Stopping and Cleaning Up:
+
+To stop the containers:
+
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+### Production Environment
+
+The production environment is optimized for security and performance.
+
+#### Steps to Run:
+
+1. Navigate to the project root directory.
+2. Ensure the required environment variables are set:
+
+   ```bash
+   export DB_USERNAME=your_prod_username
+   export DB_PASSWORD=your_prod_password
+   ```
+
+3. Run the following command:
+
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+4. Access the backend service at `http://localhost:8082`.
+
+#### Stopping and Cleaning Up:
+
+To stop the containers:
+
+```bash
+docker-compose -f docker-compose.prod.yml down
+```
+
+### Best Practices
+
+- **Environment Variables**: Always use secure values for sensitive data in production.
+- **Logs**: Check container logs for debugging:
+
+  ```bash
+  docker logs <container_name>
+  ```
+
+- **Troubleshooting**: If you encounter issues, ensure Docker is running and the required ports are not in use.
+
+---
+
+## 📨 Key Features
 
 - **Smart Transactions**: Categorize and track spending with instant visual feedback.
 - **Event-Driven Reports**: Financial summaries update asynchronously via RabbitMQ events.
