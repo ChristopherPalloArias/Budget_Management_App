@@ -30,6 +30,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
         working-directory: app/Frontend
 
+      # Step 3.1: Install ts-node for Jest TypeScript support
+      - name: Install ts-node
+        run: pnpm add ts-node --global
+
       # Step 4: Run unit tests
       - name: Run unit tests
         run: pnpm test -- --watchAll=false --passWithNoTests
