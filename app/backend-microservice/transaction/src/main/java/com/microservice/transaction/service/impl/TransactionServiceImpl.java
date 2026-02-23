@@ -6,10 +6,10 @@ import com.microservice.transaction.dto.PaginatedResponse;
 import com.microservice.transaction.dto.TransactionMapper;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
-import com.microservice.transaction.event.TransactionCreatedEvent;
-import com.microservice.transaction.exception.EntityNotFoundException;
+import com.microservice.transaction.exception.NotFoundException;
+import com.microservice.transaction.exception.ValidationException;
+import com.microservice.transaction.service.port.TransactionEventPublisherPort;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,8 @@ import com.microservice.transaction.repository.TransactionRepository;
 import com.microservice.transaction.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
+
+import java.math.BigDecimal;
 
 /**
  * Implementación principal del servicio de transacciones financieras.
@@ -73,7 +75,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final TransactionEventPublisherPort eventPublisher;
 
     /**
      * Crea una nueva transacción financiera, la persiste y dispara el evento
@@ -100,8 +102,37 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionResponse create(TransactionRequest dto) {
         Transaction entity = TransactionMapper.toRequest(dto);
         Transaction saved = transactionRepository.save(entity);
-        eventPublisher.publishEvent(new TransactionCreatedEvent(this, saved));
+        eventPublisher.publishCreated(saved);
         return TransactionMapper.toResponse(saved);
+    }
+
+    @Override
+    public TransactionResponse updateTransaction(Long id, TransactionRequest dto) {
+        validateAmount(dto.amount());
+
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        applyUpdates(existing, dto);
+
+        Transaction saved = transactionRepository.save(existing);
+        eventPublisher.publishUpdated(saved);
+        return TransactionMapper.toResponse(saved);
+    }
+
+    private void validateAmount(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Amount must be greater than zero");
+        }
+    }
+
+    private void applyUpdates(Transaction transaction, TransactionRequest dto) {
+        transaction.setUserId(dto.userId());
+        transaction.setType(dto.type());
+        transaction.setAmount(dto.amount());
+        transaction.setCategory(dto.category());
+        transaction.setDate(dto.date());
+        transaction.setDescription(dto.description());
     }
 
     /**
@@ -114,7 +145,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public TransactionResponse getById(Long id) {
         Transaction found = transactionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
         return TransactionMapper.toResponse(found);
     }
 
@@ -144,4 +175,3 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
 }
-

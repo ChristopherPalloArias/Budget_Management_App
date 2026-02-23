@@ -1,11 +1,13 @@
 package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
 import com.microservice.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Consumidor de mensajes RabbitMQ para el microservicio de reportes.
@@ -63,6 +65,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReportConsumer {
     private final ReportService reportService;
+    private final TransactionUpdateMapper transactionUpdateMapper;
+    private static final int MAX_RETRIES = 3;
 
     /**
      * Consume mensajes de la cola de transacciones <strong>creadas</strong>.
@@ -106,10 +110,36 @@ public class ReportConsumer {
      *                           actualizada en el microservicio de transacciones
      */
     @RabbitListener(queues = "${rabbitmq.queues.transaction-updated}")
+    @Transactional
     public void consumeUpdated(TransactionMessage transactionMessage) {
         log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
-        reportService.updateReport(transactionMessage);
+        handleWithRetry(transactionMessage);
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
-}
 
+    private void handleWithRetry(TransactionMessage transactionMessage) {
+        int attempts = 0;
+        while (attempts < MAX_RETRIES) {
+            try {
+                processUpdated(transactionMessage);
+                return;
+            } catch (RuntimeException ex) {
+                attempts++;
+                if (attempts >= MAX_RETRIES) {
+                    sendToDlq(transactionMessage, ex);
+                }
+            }
+        }
+    }
+
+    private void processUpdated(TransactionMessage transactionMessage) {
+        for (TransactionMessage operation : transactionUpdateMapper.toUpdateOperations(transactionMessage)) {
+            reportService.updateReport(operation);
+        }
+    }
+
+    private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
+        log.error("Sending message to DLQ after retries. transactionId={}, reason={}",
+                transactionMessage.transactionId(), ex.getMessage());
+    }
+}
