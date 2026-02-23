@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 /**
  * Consumidor de mensajes RabbitMQ para el microservicio de reportes.
  *
@@ -63,6 +65,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReportConsumer {
     private final ReportService reportService;
+    private static final int MAX_RETRIES = 3;
 
     /**
      * Consume mensajes de la cola de transacciones <strong>creadas</strong>.
@@ -108,8 +111,57 @@ public class ReportConsumer {
     @RabbitListener(queues = "${rabbitmq.queues.transaction-updated}")
     public void consumeUpdated(TransactionMessage transactionMessage) {
         log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
-        reportService.updateReport(transactionMessage);
+        handleWithRetry(transactionMessage);
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
-}
 
+    private void handleWithRetry(TransactionMessage transactionMessage) {
+        int attempts = 0;
+        while (attempts < MAX_RETRIES) {
+            try {
+                processUpdated(transactionMessage);
+                return;
+            } catch (RuntimeException ex) {
+                attempts++;
+                if (attempts >= MAX_RETRIES) {
+                    sendToDlq(transactionMessage, ex);
+                }
+            }
+        }
+    }
+
+    private void processUpdated(TransactionMessage transactionMessage) {
+        if (hasPreviousValues(transactionMessage)) {
+            TransactionMessage reversal = buildReversalMessage(transactionMessage);
+            reportService.updateReport(reversal);
+            reportService.updateReport(transactionMessage);
+            return;
+        }
+
+        reportService.updateReport(transactionMessage);
+    }
+
+    private boolean hasPreviousValues(TransactionMessage transactionMessage) {
+        return transactionMessage.previousAmount() != null && transactionMessage.previousDate() != null;
+    }
+
+    private TransactionMessage buildReversalMessage(TransactionMessage transactionMessage) {
+        BigDecimal reversalAmount = transactionMessage.previousAmount().negate();
+        return new TransactionMessage(
+                transactionMessage.transactionId(),
+                transactionMessage.userId(),
+                transactionMessage.type(),
+                reversalAmount,
+                transactionMessage.previousDate(),
+                transactionMessage.category(),
+                transactionMessage.description(),
+                null,
+                null
+        );
+    }
+
+    private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
+        log.error("Sending message to DLQ after retries. transactionId={}, reason={}",
+                transactionMessage.transactionId(), ex.getMessage());
+    }
+}
