@@ -13,39 +13,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js and install pnpm
-      - name: Set up Node.js 20 and pnpm
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: app/Frontend/pnpm-lock.yaml
+
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # Step 3: Install dependencies
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
         working-directory: app/Frontend
 
-      # Step 3.1: Install ts-node locally for Jest TypeScript support
-      - name: Install ts-node locally
-        run: pnpm add ts-node --save-dev
-        working-directory: app/Frontend
-
-      # Step 4: Run unit tests
       - name: Run unit tests
-        run: pnpm exec jest --testRegex='.*\\.(test|spec)\\.(ts|tsx)$' --watchAll=false --passWithNoTests
+        run: pnpm exec jest --ci --coverage --passWithNoTests
         working-directory: app/Frontend
 
-      # Step 5: Upload test results as artifact
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-test-results
           path: |
-            app/Frontend/coverage/
-            app/Frontend/test-results/
+            coverage/
+            test-results/
+          if-no-files-found: ignore
+          working-directory: app/Frontend
