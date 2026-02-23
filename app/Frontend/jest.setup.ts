@@ -5,7 +5,7 @@ import { TextEncoder, TextDecoder } from "util";
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 
-// Polyfill for fetch (needed for Firebase)
+// Polyfill for fetch
 const mockFetch = () =>
   Promise.resolve({
     ok: true,
@@ -36,39 +36,39 @@ Object.defineProperty(window, "matchMedia", {
     matches: false,
     media: query,
     onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addListener: () => { },
+    removeListener: () => { },
+    addEventListener: () => { },
+    removeEventListener: () => { },
     dispatchEvent: () => false,
   }),
 });
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
+  constructor() { }
+  disconnect() { }
+  observe() { }
   takeRecords() {
     return [];
   }
-  unobserve() {}
+  unobserve() { }
 } as any;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
+  constructor() { }
+  disconnect() { }
+  observe() { }
+  unobserve() { }
 } as any;
 
 // Mock Element.scrollIntoView
-Element.prototype.scrollIntoView = function () {};
+Element.prototype.scrollIntoView = function () { };
 
 // Mock HTMLElement.scrollTo
 if (typeof HTMLElement !== "undefined") {
-  HTMLElement.prototype.scrollTo = function () {};
+  HTMLElement.prototype.scrollTo = function () { };
 }
 
 // Mock pointer capture methods
@@ -76,6 +76,6 @@ if (typeof Element !== "undefined") {
   Element.prototype.hasPointerCapture = function () {
     return false;
   };
-  Element.prototype.setPointerCapture = function () {};
-  Element.prototype.releasePointerCapture = function () {};
+  Element.prototype.setPointerCapture = function () { };
+  Element.prototype.releasePointerCapture = function () { };
 }
