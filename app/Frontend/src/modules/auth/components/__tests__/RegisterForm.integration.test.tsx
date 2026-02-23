@@ -73,9 +73,9 @@ describe("RegisterForm - Integration Tests", () => {
         });
       });
 
-      // Assert: Verificar que se llamó a navigate con la ruta del dashboard
+      // Assert: Verificar que se llamó a navigate con la ruta de login
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+        expect(mockNavigate).toHaveBeenCalledWith("/login");
       });
     });
 

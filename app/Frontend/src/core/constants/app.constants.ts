@@ -38,6 +38,7 @@ export const API_ENDPOINTS = {
   TRANSACTIONS: '/v1/transactions',
   REPORTS: '/v1/reports',
   USERS: '/v1/users',
+  AUTH: '/v1/auth',
 } as const;
 
 export const HTTP_STATUS = {

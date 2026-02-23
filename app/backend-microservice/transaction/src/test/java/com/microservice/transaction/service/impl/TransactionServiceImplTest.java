@@ -2,10 +2,12 @@ package com.microservice.transaction.service.impl;
 
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
-import com.microservice.transaction.event.TransactionCreatedEvent;
 import com.microservice.transaction.model.Transaction;
 import com.microservice.transaction.model.TransactionType;
 import com.microservice.transaction.repository.TransactionRepository;
+import com.microservice.transaction.exception.NotFoundException;
+import com.microservice.transaction.exception.ValidationException;
+import com.microservice.transaction.service.port.TransactionEventPublisherPort;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,17 +33,15 @@ class TransactionServiceImplTest {
     @Mock
     private TransactionRepository transactionRepository;
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private TransactionEventPublisherPort eventPublisher;
     @InjectMocks
     private TransactionServiceImpl transactionService;
     @Captor
     private ArgumentCaptor<Transaction> transactionCaptor;
-    @Captor
-    private ArgumentCaptor<TransactionCreatedEvent> eventCaptor;
 
     @Test
-    @DisplayName("create — Happy Path: persiste la transacción, publica el evento y retorna la respuesta correcta")
-    void create_conRequestValido_persisteTransaccionYPublicaEvento() {
+    @DisplayName("create — happy path: persists transaction, publishes event, returns response")
+    void create_withValidRequest_shouldPersistAndPublishEvent() {
         TransactionRequest mockRequest = mock(TransactionRequest.class);
         when(mockRequest.userId()).thenReturn("user-001");
         when(mockRequest.type()).thenReturn(TransactionType.INCOME);
@@ -65,50 +66,143 @@ class TransactionServiceImplTest {
         TransactionResponse response = transactionService.create(mockRequest);
 
         verify(transactionRepository).save(transactionCaptor.capture());
-        Transaction entidadEnviada = transactionCaptor.getValue();
+        Transaction savedEntity = transactionCaptor.getValue();
 
-        assertAll("Mapeo correcto del DTO → Entidad antes de persistir",
-                () -> assertEquals("user-001", entidadEnviada.getUserId(),
-                        "El userId debe mapearse desde el request"),
-                () -> assertEquals(TransactionType.INCOME, entidadEnviada.getType(),
-                        "El tipo de transacción debe mapearse desde el request"),
-                () -> assertEquals(new BigDecimal("2500.50"), entidadEnviada.getAmount(),
-                        "El monto debe mapearse desde el request"),
-                () -> assertEquals("Salario", entidadEnviada.getCategory(),
-                        "La categoría debe mapearse desde el request"),
-                () -> assertEquals(LocalDate.of(2026, 2, 12), entidadEnviada.getDate(),
-                        "La fecha debe mapearse desde el request"),
-                () -> assertEquals("Pago quincenal de salario", entidadEnviada.getDescription(),
-                        "La descripción debe mapearse desde el request")
+        assertAll("DTO to entity mapping before persistence",
+                () -> assertEquals("user-001", savedEntity.getUserId(),
+                        "UserId should be mapped from the request"),
+                () -> assertEquals(TransactionType.INCOME, savedEntity.getType(),
+                        "Transaction type should be mapped from the request"),
+                () -> assertEquals(new BigDecimal("2500.50"), savedEntity.getAmount(),
+                        "Amount should be mapped from the request"),
+                () -> assertEquals("Salario", savedEntity.getCategory(),
+                        "Category should be mapped from the request"),
+                () -> assertEquals(LocalDate.of(2026, 2, 12), savedEntity.getDate(),
+                        "Date should be mapped from the request"),
+                () -> assertEquals("Pago quincenal de salario", savedEntity.getDescription(),
+                        "Description should be mapped from the request")
         );
 
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        TransactionCreatedEvent eventoPublicado = eventCaptor.getValue();
+        verify(eventPublisher).publishCreated(mockSavedTransaction);
 
-        assertSame(mockSavedTransaction, eventoPublicado.getTransaction(),
-                "El evento debe contener la misma instancia de Transaction retornada por el repositorio");
-
-        assertAll("Respuesta mapeada correctamente desde la entidad guardada",
+        assertAll("Response mapped correctly from saved entity",
                 () -> assertNotNull(response,
-                        "La respuesta no debe ser nula"),
+                        "Response should not be null"),
                 () -> assertEquals(42L, response.transactionId(),
-                        "El ID debe ser el generado por la base de datos"),
+                        "ID should be generated by the database"),
                 () -> assertEquals("user-001", response.userId(),
-                        "El userId de la respuesta debe coincidir"),
+                        "Response userId should match"),
                 () -> assertEquals(TransactionType.INCOME, response.type(),
-                        "El tipo de la respuesta debe coincidir"),
+                        "Response type should match"),
                 () -> assertEquals(new BigDecimal("2500.50"), response.amount(),
-                        "El monto de la respuesta debe coincidir"),
+                        "Response amount should match"),
                 () -> assertEquals("Salario", response.category(),
-                        "La categoría de la respuesta debe coincidir"),
+                        "Response category should match"),
                 () -> assertEquals(LocalDate.of(2026, 2, 12), response.date(),
-                        "La fecha de la respuesta debe coincidir"),
+                        "Response date should match"),
                 () -> assertEquals("Pago quincenal de salario", response.description(),
-                        "La descripción de la respuesta debe coincidir"),
+                        "Response description should match"),
                 () -> assertEquals(OffsetDateTime.parse("2026-02-12T20:00:00-05:00"), response.createdAt(),
-                        "El timestamp de creación debe ser el asignado por la persistencia")
+                        "Created timestamp should be assigned by persistence")
         );
 
         verifyNoMoreInteractions(transactionRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("update — happy path: updates transaction and publishes event")
+    void shouldUpdateTransactionSuccessfully_andPublishEvent() {
+        Long transactionId = 123L;
+        TransactionRequest request = new TransactionRequest(
+                "user-123",
+                TransactionType.EXPENSE,
+                new BigDecimal("150.00"),
+                "Alimentacion",
+                LocalDate.of(2025, 3, 10),
+                "Compra semanal"
+        );
+
+        Transaction existing = Transaction.builder()
+                .transactionId(transactionId)
+                .userId("user-123")
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.00"))
+                .category("Hogar")
+                .date(LocalDate.of(2025, 3, 9))
+                .description("Compra anterior")
+                .createdAt(OffsetDateTime.parse("2025-03-09T10:00:00-05:00"))
+                .build();
+
+        Transaction saved = Transaction.builder()
+                .transactionId(transactionId)
+                .userId("user-123")
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("150.00"))
+                .category("Alimentacion")
+                .date(LocalDate.of(2025, 3, 10))
+                .description("Compra semanal")
+                .createdAt(existing.getCreatedAt())
+                .build();
+
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(existing));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(saved);
+
+        TransactionResponse response = transactionService.updateTransaction(transactionId, request);
+
+        assertAll("Respuesta de actualizacion",
+                () -> assertNotNull(response, "La respuesta no debe ser nula"),
+                () -> assertEquals(transactionId, response.transactionId(), "El ID debe coincidir"),
+                () -> assertEquals(new BigDecimal("150.00"), response.amount(), "El monto debe actualizarse"),
+                () -> assertEquals("Alimentacion", response.category(), "La categoria debe actualizarse")
+        );
+
+        verify(transactionRepository).findById(transactionId);
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(eventPublisher).publishUpdated(saved);
+    }
+
+    @Test
+    @DisplayName("update — not found: throws NotFoundException and does not publish event")
+    void shouldReturn404_whenTransactionNotFound() {
+        Long transactionId = 999L;
+        TransactionRequest request = new TransactionRequest(
+                "user-123",
+                TransactionType.EXPENSE,
+                new BigDecimal("150.00"),
+                "Alimentacion",
+                LocalDate.of(2025, 3, 10),
+                "Compra semanal"
+        );
+
+        when(transactionRepository.findById(transactionId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> transactionService.updateTransaction(transactionId, request),
+                "Should throw NotFoundException when transaction does not exist"
+        );
+
+        verify(transactionRepository).findById(transactionId);
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("update — bad request: rejects negative amount and does not publish event")
+    void shouldReturn400_whenAmountIsNegative() {
+        TransactionRequest request = new TransactionRequest(
+                "user-123",
+                TransactionType.EXPENSE,
+                new BigDecimal("-10.00"),
+                "Alimentacion",
+                LocalDate.of(2025, 3, 10),
+                "Compra semanal"
+        );
+
+        assertThrows(ValidationException.class,
+                () -> transactionService.updateTransaction(123L, request),
+                "Should reject negative amount"
+        );
+
+        verifyNoInteractions(transactionRepository, eventPublisher);
     }
 }

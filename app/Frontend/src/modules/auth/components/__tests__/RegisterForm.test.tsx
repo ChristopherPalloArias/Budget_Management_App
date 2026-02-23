@@ -332,7 +332,7 @@ describe("RegisterForm Component", () => {
           "test@example.com",
           "Password123",
         );
-        expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+        expect(mockNavigate).toHaveBeenCalledWith("/login");
       });
     });
 
@@ -367,7 +367,7 @@ describe("RegisterForm Component", () => {
 
       // Assert
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+        expect(mockNavigate).toHaveBeenCalledWith("/login");
       });
     });
   });
@@ -441,129 +441,13 @@ describe("RegisterForm Component", () => {
   });
 
   describe("Manejo de errores", () => {
-    it("debe mostrar mensaje de error cuando el registro falla", async () => {
-      // Arrange: Simular error de registro
-      const user = userEvent.setup();
-      const errorMessage = "Email already in use";
-      (registerWithEmail as jest.Mock).mockRejectedValueOnce(
-        new Error(errorMessage),
-      );
-
-      render(<RegisterForm />);
-
-      // Act: Intentar registrar
-      const nameInput = screen.getByLabelText("Nombre Completo");
-      const emailInput = screen.getByLabelText("Correo Electrónico");
-      const passwordInput = screen.getByLabelText("Contraseña");
-      const confirmPasswordInput = screen.getByLabelText(
-        "Confirmar Contraseña",
-      );
-      const submitButton = screen.getByRole("button", {
-        name: /crear cuenta/i,
-      });
-
-      await user.type(nameInput, "Test User");
-      await user.type(emailInput, "existing@example.com");
-      await user.type(passwordInput, "Password123");
-      await user.type(confirmPasswordInput, "Password123");
-
-      // Limpiar el mock de navegación antes de la acción
-      mockNavigate.mockClear();
-
-      await user.click(submitButton);
-
-      // Assert: Verificar que se muestra el error
-      await waitFor(
-        () => {
-          expect(screen.getByText(errorMessage)).toBeInTheDocument();
-        },
-        { timeout: 3000 },
-      );
-      expect(mockNavigate).not.toHaveBeenCalled();
-    });
-
-    it("debe mostrar el estilo de error correcto", async () => {
+    it("no debe mostrar mensaje de error manual ya que ahora se usa toast", () => {
       // Arrange
-      const user = userEvent.setup();
-      (registerWithEmail as jest.Mock).mockRejectedValue(
-        new Error("Registration failed"),
-      );
-
       render(<RegisterForm />);
 
-      // Act
-      const nameInput = screen.getByLabelText("Nombre Completo");
-      const emailInput = screen.getByLabelText("Correo Electrónico");
-      const passwordInput = screen.getByLabelText("Contraseña");
-      const confirmPasswordInput = screen.getByLabelText(
-        "Confirmar Contraseña",
-      );
-      const submitButton = screen.getByRole("button", {
-        name: /crear cuenta/i,
-      });
-
-      await user.type(nameInput, "Test User");
-      await user.type(emailInput, "test@example.com");
-      await user.type(passwordInput, "Password123");
-      await user.type(confirmPasswordInput, "Password123");
-      await user.click(submitButton);
-
-      // Assert
-      await waitFor(() => {
-        const errorDiv = screen.getByText("Registration failed").closest("div");
-        expect(errorDiv).toHaveClass(
-          "bg-red-50",
-          "border-red-200",
-          "text-red-800",
-        );
-      });
-    });
-
-    it("debe limpiar el error anterior al enviar nuevamente", async () => {
-      // Arrange: Primer intento con error
-      const user = userEvent.setup();
-      (registerWithEmail as jest.Mock).mockRejectedValueOnce(
-        new Error("First error"),
-      );
-
-      render(<RegisterForm />);
-
-      const nameInput = screen.getByLabelText("Nombre Completo");
-      const emailInput = screen.getByLabelText("Correo Electrónico");
-      const passwordInput = screen.getByLabelText("Contraseña");
-      const confirmPasswordInput = screen.getByLabelText(
-        "Confirmar Contraseña",
-      );
-      const submitButton = screen.getByRole("button", {
-        name: /crear cuenta/i,
-      });
-
-      await user.type(nameInput, "Test User");
-      await user.type(emailInput, "test@example.com");
-      await user.type(passwordInput, "Password123");
-      await user.type(confirmPasswordInput, "Password123");
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("First error")).toBeInTheDocument();
-      });
-
-      // Act: Segundo intento exitoso
-      (registerWithEmail as jest.Mock).mockResolvedValueOnce({
-        uid: "test-uid",
-        email: "test@example.com",
-        displayName: "Test User",
-        photoURL: null,
-      });
-
-      await user.clear(emailInput);
-      await user.type(emailInput, "newemail@example.com");
-      await user.click(submitButton);
-
-      // Assert: El error anterior debe desaparecer
-      await waitFor(() => {
-        expect(screen.queryByText("First error")).not.toBeInTheDocument();
-      });
+      // Act & Assert
+      const errorElements = screen.queryByRole("alert");
+      expect(errorElements).not.toBeInTheDocument();
     });
   });
 

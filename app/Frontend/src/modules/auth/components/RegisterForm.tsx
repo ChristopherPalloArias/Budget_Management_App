@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
-import { registerSchema, type RegisterFormData } from '../schemas/registerSchema.ts';
-import { registerWithEmail } from '../services/authService.ts';
+import { Link } from 'react-router-dom';
+import { registerSchema, type RegisterFormData } from '../schemas/registerSchema';
+import { useRegisterForm } from '../hooks/useRegisterForm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
  * Handles user registration with email/password
  */
 export const RegisterForm = () => {
-    const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const { state, registerUser } = useRegisterForm();
 
     const {
         register,
@@ -27,18 +24,10 @@ export const RegisterForm = () => {
     });
 
     const onSubmit = async (data: RegisterFormData) => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            await registerWithEmail(data.displayName, data.email, data.password);
-            navigate('/dashboard');
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
+        await registerUser(data);
     };
+
+    const isLoading = state.isLoading;
 
     return (
         <Card className="w-full max-w-md">
@@ -51,13 +40,6 @@ export const RegisterForm = () => {
 
             <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Error Alert */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                            {error}
-                        </div>
-                    )}
-
                     {/* Display Name Field */}
                     <div className="space-y-2">
                         <Label htmlFor="displayName">Nombre Completo</Label>
@@ -133,12 +115,12 @@ export const RegisterForm = () => {
                 </form>
             </CardContent>
 
-            <CardFooter className="flex justify-center">
+            <CardFooter className="flex justify-center border-t pt-6 bg-gray-50/50 rounded-b-lg">
                 <p className="text-sm text-gray-600">
                     ¿Ya tienes cuenta?{' '}
-                    <a href="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                    <Link to="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
                         Inicia sesión aquí
-                    </a>
+                    </Link>
                 </p>
             </CardFooter>
         </Card>

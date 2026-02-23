@@ -37,6 +37,13 @@ export const useUserStore = create<UserState>()(
                     }
                 },
 
+                /**
+                 * Inicializa la verificación de autenticación.
+                 *
+                 * Lee el token JWT de localStorage y, si existe,
+                 * llama a GET /me para validar que siga vigente.
+                 * Ejecuta el callback con el usuario o null.
+                 */
                 initAuthListener: () => {
                     const unsubscribe = authRepository.onAuthStateChanged((user) => {
                         get().setUser(user);
@@ -59,3 +66,4 @@ export const useUserStore = create<UserState>()(
         { name: 'User Store' }
     )
 );
+

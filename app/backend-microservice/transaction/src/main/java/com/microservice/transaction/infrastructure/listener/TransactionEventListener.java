@@ -1,6 +1,7 @@
 package com.microservice.transaction.infrastructure.listener;
 
 import com.microservice.transaction.event.TransactionCreatedEvent;
+import com.microservice.transaction.event.TransactionUpdatedEvent;
 import com.microservice.transaction.infrastructure.TransactionMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,5 +21,12 @@ public class TransactionEventListener {
     public void handleTransactionCreatedEvent(TransactionCreatedEvent event) {
         log.info("Handling TransactionCreatedEvent for transaction: {}", event.getTransaction().getTransactionId());
         transactionMessageProducer.sendCreated(event.getTransaction());
+    }
+
+    @Async
+    @EventListener
+    public void handleTransactionUpdatedEvent(TransactionUpdatedEvent event) {
+        log.info("Handling TransactionUpdatedEvent for transaction: {}", event.getTransaction().getTransactionId());
+        transactionMessageProducer.sendUpdated(event.getTransaction());
     }
 }

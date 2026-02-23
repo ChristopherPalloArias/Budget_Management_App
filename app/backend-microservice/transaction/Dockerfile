@@ -7,12 +7,8 @@ WORKDIR /app
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd ./
 COPY .mvn .mvn
-COPY pom.xml ./
-
-# Pre-fetch dependencies (optimized for caching)
-RUN chmod +x mvnw && ./mvnw dependency:go-offline
-
-# Copy source code and build
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+RUN ./mvnw dependency:go-offline
 COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
