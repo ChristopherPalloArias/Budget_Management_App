@@ -28,10 +28,12 @@ jobs:
       # Step 3: Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        working-directory: app/Frontend
 
       # Step 4: Run unit tests
       - name: Run unit tests
         run: pnpm test -- --watchAll=false --passWithNoTests
+        working-directory: app/Frontend
 
       # Step 5: Upload test results as artifact
       - name: Upload test results
@@ -40,5 +42,5 @@ jobs:
         with:
           name: frontend-test-results
           path: |
-            coverage/
-            test-results/
+            app/Frontend/coverage/
+            app/Frontend/test-results/
