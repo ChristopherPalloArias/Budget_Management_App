@@ -194,6 +194,7 @@ export class ApiAuthRepository implements IAuthRepository {
         }
       );
 
+      this.saveToken(response.data.token);
       return this.mapApiResponse(response.data);
     } catch (error) {
       this.handleApiError(error);
