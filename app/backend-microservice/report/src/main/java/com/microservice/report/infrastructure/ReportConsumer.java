@@ -1,13 +1,13 @@
 package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
 import com.microservice.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Consumidor de mensajes RabbitMQ para el microservicio de reportes.
@@ -65,6 +65,7 @@ import java.math.BigDecimal;
 @Service
 public class ReportConsumer {
     private final ReportService reportService;
+    private final TransactionUpdateMapper transactionUpdateMapper;
     private static final int MAX_RETRIES = 3;
 
     /**
@@ -109,6 +110,7 @@ public class ReportConsumer {
      *                           actualizada en el microservicio de transacciones
      */
     @RabbitListener(queues = "${rabbitmq.queues.transaction-updated}")
+    @Transactional
     public void consumeUpdated(TransactionMessage transactionMessage) {
         log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
         handleWithRetry(transactionMessage);
@@ -131,33 +133,9 @@ public class ReportConsumer {
     }
 
     private void processUpdated(TransactionMessage transactionMessage) {
-        if (hasPreviousValues(transactionMessage)) {
-            TransactionMessage reversal = buildReversalMessage(transactionMessage);
-            reportService.updateReport(reversal);
-            reportService.updateReport(transactionMessage);
-            return;
+        for (TransactionMessage operation : transactionUpdateMapper.toUpdateOperations(transactionMessage)) {
+            reportService.updateReport(operation);
         }
-
-        reportService.updateReport(transactionMessage);
-    }
-
-    private boolean hasPreviousValues(TransactionMessage transactionMessage) {
-        return transactionMessage.previousAmount() != null && transactionMessage.previousDate() != null;
-    }
-
-    private TransactionMessage buildReversalMessage(TransactionMessage transactionMessage) {
-        BigDecimal reversalAmount = transactionMessage.previousAmount().negate();
-        return new TransactionMessage(
-                transactionMessage.transactionId(),
-                transactionMessage.userId(),
-                transactionMessage.type(),
-                reversalAmount,
-                transactionMessage.previousDate(),
-                transactionMessage.category(),
-                transactionMessage.description(),
-                null,
-                null
-        );
     }
 
     private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
