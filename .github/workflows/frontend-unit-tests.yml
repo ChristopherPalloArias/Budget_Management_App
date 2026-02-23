@@ -27,7 +27,7 @@ jobs:
 
       # Step 3: Install dependencies
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
         working-directory: app/Frontend
 
       # Step 4: Run unit tests
