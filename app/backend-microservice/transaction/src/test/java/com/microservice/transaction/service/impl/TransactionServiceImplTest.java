@@ -2,13 +2,12 @@ package com.microservice.transaction.service.impl;
 
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
-import com.microservice.transaction.event.TransactionCreatedEvent;
-import com.microservice.transaction.event.TransactionUpdatedEvent;
 import com.microservice.transaction.model.Transaction;
 import com.microservice.transaction.model.TransactionType;
 import com.microservice.transaction.repository.TransactionRepository;
 import com.microservice.transaction.exception.NotFoundException;
 import com.microservice.transaction.exception.ValidationException;
+import com.microservice.transaction.service.port.TransactionEventPublisherPort;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,13 +33,11 @@ class TransactionServiceImplTest {
     @Mock
     private TransactionRepository transactionRepository;
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private TransactionEventPublisherPort eventPublisher;
     @InjectMocks
     private TransactionServiceImpl transactionService;
     @Captor
     private ArgumentCaptor<Transaction> transactionCaptor;
-    @Captor
-    private ArgumentCaptor<TransactionCreatedEvent> eventCaptor;
 
     @Test
     @DisplayName("create — happy path: persists transaction, publishes event, returns response")
@@ -69,28 +66,24 @@ class TransactionServiceImplTest {
         TransactionResponse response = transactionService.create(mockRequest);
 
         verify(transactionRepository).save(transactionCaptor.capture());
-        Transaction entidadEnviada = transactionCaptor.getValue();
+        Transaction savedEntity = transactionCaptor.getValue();
 
         assertAll("DTO to entity mapping before persistence",
-                () -> assertEquals("user-001", entidadEnviada.getUserId(),
+                () -> assertEquals("user-001", savedEntity.getUserId(),
                         "UserId should be mapped from the request"),
-                () -> assertEquals(TransactionType.INCOME, entidadEnviada.getType(),
+                () -> assertEquals(TransactionType.INCOME, savedEntity.getType(),
                         "Transaction type should be mapped from the request"),
-                () -> assertEquals(new BigDecimal("2500.50"), entidadEnviada.getAmount(),
+                () -> assertEquals(new BigDecimal("2500.50"), savedEntity.getAmount(),
                         "Amount should be mapped from the request"),
-                () -> assertEquals("Salario", entidadEnviada.getCategory(),
+                () -> assertEquals("Salario", savedEntity.getCategory(),
                         "Category should be mapped from the request"),
-                () -> assertEquals(LocalDate.of(2026, 2, 12), entidadEnviada.getDate(),
+                () -> assertEquals(LocalDate.of(2026, 2, 12), savedEntity.getDate(),
                         "Date should be mapped from the request"),
-                () -> assertEquals("Pago quincenal de salario", entidadEnviada.getDescription(),
+                () -> assertEquals("Pago quincenal de salario", savedEntity.getDescription(),
                         "Description should be mapped from the request")
         );
 
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        TransactionCreatedEvent eventoPublicado = eventCaptor.getValue();
-
-        assertSame(mockSavedTransaction, eventoPublicado.getTransaction(),
-                "Event should contain the same Transaction instance returned by the repository");
+        verify(eventPublisher).publishCreated(mockSavedTransaction);
 
         assertAll("Response mapped correctly from saved entity",
                 () -> assertNotNull(response,
@@ -165,7 +158,7 @@ class TransactionServiceImplTest {
 
         verify(transactionRepository).findById(transactionId);
         verify(transactionRepository).save(any(Transaction.class));
-        verify(eventPublisher).publishEvent(any(TransactionUpdatedEvent.class));
+        verify(eventPublisher).publishUpdated(saved);
     }
 
     @Test
