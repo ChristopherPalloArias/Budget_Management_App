@@ -10,7 +10,7 @@ export function useGetReportsSummary(filters: Omit<ReportFilters, 'period'> = {}
     queryKey: ["reports", "summary", filters],
     queryFn: () => {
       if (!user) throw new Error("User not authenticated")
-      return getReportsSummary(user.uid, filters)
+      return getReportsSummary(user.id, filters)
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 10,

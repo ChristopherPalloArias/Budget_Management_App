@@ -13,9 +13,23 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        max-page-size: 100
 
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
+
+rabbitmq:
+  queues:
+    transaction-exchange: transaction-exchange
+    transaction-created: transaction.created.queue
+    transaction-updated: transaction.updated.queue
+app:
+  cors:
+    allowed-origins: "http://localhost:3000,http://localhost:4200"

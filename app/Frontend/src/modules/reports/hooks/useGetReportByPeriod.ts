@@ -10,7 +10,7 @@ export function useGetReportByPeriod(filters: Required<Pick<ReportFilters, 'peri
     queryKey: ["reports", "byPeriod", filters.period],
     queryFn: () => {
       if (!user) throw new Error("User not authenticated")
-      return getReportByPeriod(user.uid, filters)
+      return getReportByPeriod(user.id, filters)
     },
     enabled: !!user && !!filters.period,
     staleTime: 1000 * 60 * 15,

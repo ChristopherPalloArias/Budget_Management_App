@@ -21,13 +21,13 @@ export function useTransactions(period?: string) {
 
   const transactionsQuery = useQuery({
     queryKey: ["transactions", period],
-    queryFn: () => getTransactionsByUser(user.uid, period),
+    queryFn: () => getTransactionsByUser(user.id, period),
     staleTime: 1000 * 60 * 5,
     retry: 2,
   })
 
   const createTransactionMutation = useMutation({
-    mutationFn: (data: TransactionFormData) => createTransaction(data),
+    mutationFn: (data: TransactionFormData) => createTransaction(data, user.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       toast.success("Transacción creada con éxito")

@@ -3,7 +3,8 @@ import { Search, RotateCcw } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 import { DatePickerWithRange } from "../../../components/ui/date-picker"
 import type { ReportFilters } from "../types/report.types"
-import { getLastYearRange, periodToDate } from "../utils/dateHelpers"
+import { getLastYearRange } from "../utils/dateHelpers"
+import { periodToDate } from "@/lib/date-utils"
 
 
 interface DateRange {

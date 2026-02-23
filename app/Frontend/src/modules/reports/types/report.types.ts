@@ -43,3 +43,14 @@ export interface ReportFilters {
     startPeriod?: string;
     endPeriod?: string;
 }
+
+// Recalculate Report Types
+export interface RecalculateReportRequest {
+    userId: string;
+    period: string;
+}
+
+export interface RecalculateReportResponse {
+    balance: number;
+    period: string;
+}

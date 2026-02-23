@@ -274,36 +274,49 @@ Our 2.5-day project follows these phases:
 - **Real-time documentation** of effective prompts in PROMPT_DOCUMENTATION.md
 - **End-of-project retrospective** capturing lessons learned
 
-## 5. Quality Standards & Ethics
+## 5. Quality Gate
+# SonarCloud Quality Gate in Our CI/CD Workflow
 
-### A. Code Quality Requirements
+## What is a Quality Gate?
+A Quality Gate is an automated policy that prevents code from progressing if it doesn’t meet agreed quality standards (e.g., code coverage, bugs, vulnerabilities, code smells, duplications). We use **SonarCloud** to enforce this gate for both backend and frontend code.
 
-- **All AI-generated code must be reviewed** by at least one human
-- **All AI-generated code must be understood** by the team member integrating it
-- **No hardcoded secrets or sensitive data**
+## Where it runs in the pipeline
+- Job: `sonarqube` (SonarCloud Analysis)
+- It executes after:
+  - `backend-test` (Java/Spring unit tests)
+  - `frontend-test` (React/TypeScript unit tests)
+- The `build` job depends on `sonarqube`. If the Quality Gate fails, `build` is skipped automatically.
 
-### B. Ethical Guidelines
+## What the job does
+- Backend:
+  - Runs `mvn sonar:sonar` with:
+    - `sonar.projectKey`: `majoymajo_Budget_Management_App`
+    - `sonar.organization`: `majoymajo`
+    - `sonar.host.url` from the secret `SONAR_HOST_URL`
+    - `sonar.login` from the secret `SONAR_TOKEN`
+- Frontend:
+  - Uses `sonarsource/sonarqube-scan-action@v2` with:
+    - `sonar.projectKey`: `majoymajo_Budget_Management_App`
+    - `sonar.organization`: `majoymajo`
+    - `sonar.sources`: `app/Frontend`
+    - Coverage report at `app/Frontend/coverage/lcov.info`
+    - Exclusions for `node_modules/**` and `dist/**`
+  - Auth via `SONAR_TOKEN` and `SONAR_HOST_URL` secrets
+ The `sonarqube` job evaluates code health and coverage against SonarCloud rules.
 
-✅ **Acceptable Use:**
+## Where to check results
+- Pipeline Summary: shows “SonarCloud Analysis” status and a dedicated “Quality Gate” section.
+- SonarCloud Project: https://sonarcloud.io/project/overview?id=majoymajo_Budget_Management_App
+- Pull Request : on the comments sections appear the checks from Sonar Cloud.
 
-- Using AI to accelerate development
-- Learning from AI explanations
-- Getting suggestions for improvements
-- Generating boilerplate and tests
-
-❌ **Unacceptable Use:**
-
-- Copying AI code without understanding
-- Sharing sensitive project data with AI
-- Using AI to bypass learning fundamentals
-- Claiming AI work as entirely original without disclosure
-- Violating licenses or intellectual property
-
-### C. Data Privacy
-
-- **Never share:** API keys, passwords, tokens, personal user data
-- **Sanitize inputs:** Remove sensitive info before sharing with AI
-- **Review outputs:** Ensure AI doesn't generate inappropriate content
+## Environment and secrets used
+- Env:
+  - `SONAR_PROJECT_KEY_BACKEND`: `majoymajo_Budget_Management_App`
+  - `SONAR_PROJECT_KEY_FRONTEND`: `majoymajo_Budget_Management_App`
+  - `SONAR_ORGANIZATION`: `majoymajo`
+- Secrets:
+  - `SONAR_HOST_URL`: `https://sonarcloud.io`
+  - `SONAR_TOKEN`: token from SonarCloud (“My Account” → “Security”)
 
 ---
 
