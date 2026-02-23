@@ -3,7 +3,7 @@ name: Transaction Unit Tests
 on:
   pull_request:
     branches:
-      - release
+      - release/**
     paths:
       - 'app/backend-microservice/transaction/**'
 
