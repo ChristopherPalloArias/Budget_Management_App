@@ -1,17 +1,133 @@
-version: '3.8'
+version: "3.9"
+
+networks:
+  finance-network:
+    driver: bridge
+
+volumes:
+  mysql-transactions-data:
+  mysql-reports-data:
+  mysql-auth-data:
+  prometheus-data:
+  grafana-data:
+  portainer-data:
 
 services:
-  backend:
-    image: report-service:1.0.0
+
+  # ─────────────────────────────────────────────
+  # MONITORING STACK
+  # ─────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - finance-network
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    ports:
+      - "9443:9443"
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  # ─────────────────────────────────────────────
+  # APPLICATION SERVICES
+  # ─────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./app/Frontend
+      args:
+        VITE_API_TRANSACTIONS_URL: http://transaction:8081/api
+        VITE_API_REPORTS_URL: http://report:8082/api
+        VITE_API_AUTH_URL: http://auth:8083/api
+    container_name: finance-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - transaction
+      - report
+      - auth
+    restart: unless-stopped
+    networks:
+      - finance-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  transaction:
+    build:
+      context: ./app/backend-microservice/transaction
+    container_name: transaction
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: prometheus,health,info
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  report:
+    build:
+      context: ./app/backend-microservice/report
+    container_name: report
     ports:
       - "8082:8082"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: prometheus,health,info
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+    restart: unless-stopped
     networks:
-      - app-network
+      - finance-network
 
-networks:
-  app-network:
-    driver: bridge
+  auth:
+    build:
+      context: ./app/backend-microservice/auth
+    container_name: auth
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: prometheus,health,info
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+    restart: unless-stopped
+    networks:
+      - finance-network
