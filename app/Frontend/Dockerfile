@@ -1,5 +1,6 @@
 # Stage 1: Build
 FROM node:20.11.1-alpine3.19 AS builder
+#TODO: Consider using a specific version of node to ensure consistency across builds and environments.
 
 # Install pnpm
 RUN npm install -g pnpm@8.15.4
