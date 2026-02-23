@@ -5,7 +5,7 @@ FROM eclipse-temurin:17.0.10_7-jdk-alpine AS build
 WORKDIR /app
 
 # Copy Maven wrapper and pom.xml
-COPY mvnw mvnw.cmd ./
+COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 RUN ./mvnw dependency:go-offline
