@@ -37,7 +37,7 @@ jobs:
 
       # Step 4: Run unit tests
       - name: Run unit tests
-        run: pnpm exec jest -- --watchAll=false --passWithNoTests
+        run: pnpm exec jest --testRegex='.*\\.(test|spec)\\.(ts|tsx)$' --watchAll=false --passWithNoTests
         working-directory: app/Frontend
 
       # Step 5: Upload test results as artifact
