@@ -2,6 +2,7 @@ package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
+import com.microservice.report.service.IdempotencyService;
 import com.microservice.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +57,20 @@ import org.springframework.transaction.annotation.Transactional;
  *       diagnóstico del origen del problema.</li>
  * </ul>
  *
+ * <h3>Idempotencia (RFC 9110)</h3>
+ * <p>Desde la versión actualizada, se implementa <strong>verificación de duplicados</strong>
+ * mediante el campo {@code messageId} en {@link TransactionMessage}. Esto garantiza que:</p>
+ * <ul>
+ *   <li>Si RabbitMQ reentrega un mensaje, se detecta como duplicado y se descarta.</li>
+ *   <li>El monto no se acumula múltiples veces en los reportes.</li>
+ *   <li>El sistema es resiliente a fallos sin afectar la consistencia de datos.</li>
+ * </ul>
+ * <p>La verificación ocurre en {@link IdempotencyService#isFirstTimeProcessing(TransactionMessage, String)},
+ * que registra el {@code messageId} en la tabla {@code processed_messages} de forma transaccional.</p>
+ *
  * @see ReportService           Servicio de negocio que procesa las transacciones
  * @see TransactionMessage      DTO que representa el mensaje consumido desde RabbitMQ
+ * @see IdempotencyService      Servicio que implementa verificación de duplicados
  * @see RabbitMQConfiguration   Clase que define las colas, exchanges y bindings
  */
 @Slf4j
@@ -65,6 +78,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReportConsumer {
     private final ReportService reportService;
+    private final IdempotencyService idempotencyService;
     private final TransactionUpdateMapper transactionUpdateMapper;
     private static final int MAX_RETRIES = 3;
 
@@ -76,6 +90,10 @@ public class ReportConsumer {
      * deserializado por {@code Jackson2JsonMessageConverter} (configurado en
      * {@link RabbitMQConfiguration}) desde JSON a {@link TransactionMessage}.</p>
      *
+     * <p><strong>Idempotencia:</strong> Antes de procesar, se verifica si el
+     * {@code messageId} ya fue procesado. Si es un duplicado (reentrega de RabbitMQ),
+     * el mensaje se descarta sin modificar el reporte.</p>
+     *
      * <p>Tras el procesamiento exitoso, el mensaje es automáticamente confirmado
      * (ACK) por Spring AMQP. En caso de excepción, el comportamiento depende
      * de la configuración de retry (actualmente sin configurar — ver DT-DOC-07).</p>
@@ -84,8 +102,18 @@ public class ReportConsumer {
      *                           recién creada en el microservicio de transacciones
      */
     @RabbitListener(queues = "${rabbitmq.queues.transaction-created}")
+    @Transactional
     public void consumeCreated(TransactionMessage transactionMessage) {
-        log.info("Processing Created transaction ID: {}", transactionMessage.transactionId());
+        log.info("Processing Created transaction ID: {}, messageId: {}", 
+                transactionMessage.transactionId(), transactionMessage.messageId());
+        
+        // Verificar idempotencia: si es un duplicado, descartarlo silenciosamente
+        if (!idempotencyService.isFirstTimeProcessing(transactionMessage, "transaction.created")) {
+            log.info("Discarding duplicate message for transaction ID: {}, messageId: {}",
+                    transactionMessage.transactionId(), transactionMessage.messageId());
+            return;
+        }
+        
         reportService.updateReport(transactionMessage);
         log.info("Successfully created transaction ID: {}", transactionMessage.transactionId());
     }
@@ -95,6 +123,9 @@ public class ReportConsumer {
      *
      * <p>Este método escucha la cola {@code transaction-updated} y procesa las
      * transacciones que han sido modificadas en el microservicio de transacciones.</p>
+     *
+     * <p><strong>Idempotencia:</strong> Antes de procesar, se verifica si el
+     * {@code messageId} ya fue procesado. Si es un duplicado, el mensaje se descarta.</p>
      *
      * <p><strong>⚠️ Deuda técnica (DT-DOC-08):</strong> Actualmente este método
      * invoca la misma lógica que {@link #consumeCreated}, lo que significa que una
@@ -112,7 +143,16 @@ public class ReportConsumer {
     @RabbitListener(queues = "${rabbitmq.queues.transaction-updated}")
     @Transactional
     public void consumeUpdated(TransactionMessage transactionMessage) {
-        log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
+        log.info("Processing Updated transaction ID: {}, messageId: {}", 
+                transactionMessage.transactionId(), transactionMessage.messageId());
+        
+        // Verificar idempotencia: si es un duplicado, descartarlo silenciosamente
+        if (!idempotencyService.isFirstTimeProcessing(transactionMessage, "transaction.updated")) {
+            log.info("Discarding duplicate message for transaction ID: {}, messageId: {}",
+                    transactionMessage.transactionId(), transactionMessage.messageId());
+            return;
+        }
+        
         handleWithRetry(transactionMessage);
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
