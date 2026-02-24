@@ -97,3 +97,15 @@ jest.mock("@/core/api/HttpClient", () => ({
     clearInstances: jest.fn(),
   },
 }));
+
+// Mock Sonner toast to avoid DOM dependencies in tests
+jest.mock("sonner", () => ({
+  __esModule: true,
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    message: jest.fn(),
+    warning: jest.fn(),
+  },
+  Toaster: () => null,
+}));
