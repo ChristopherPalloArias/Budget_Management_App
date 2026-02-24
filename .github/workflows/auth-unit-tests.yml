@@ -32,6 +32,12 @@ jobs:
         run: ls app/backend-microservice/auth
         working-directory: app/backend-microservice/auth
 
+      - name: Debug Maven Build
+        run: |
+          mvn clean test
+          ls target || echo "Target directory not created"
+        working-directory: app/backend-microservice/auth
+
       - name: Run unit tests y Verificar Cobertura (70%)
         run: mvn test jacoco:report jacoco:check --no-transfer-progress
         working-directory: app/backend-microservice/auth
