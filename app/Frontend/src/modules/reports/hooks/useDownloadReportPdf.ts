@@ -22,7 +22,7 @@ export function useDownloadReportPdf() {
         try {
             setDownloadingPeriod(period);
             setError(null);
-            await downloadReportPdf(user.id, period);
+            await downloadReportPdf(period);
         } catch (err) {
             const message = err instanceof Error
                 ? err.message

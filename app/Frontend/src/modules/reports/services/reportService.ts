@@ -6,18 +6,18 @@ import type { ReportResponse, ReportItemResponse } from '../types/report.types';
 // Obtener instancia específica para el microservicio de reports
 const reportsHttpClient = HttpClient.getInstance('reports');
 
-export const getReportsSummary = async (userId: string, filters: Omit<ReportFilters, 'period'>): Promise<ReportsSummaryModel> => {
+export const getReportsSummary = async (filters: Omit<ReportFilters, 'period'>): Promise<ReportsSummaryModel> => {
     const params = new URLSearchParams();
     if (filters.startPeriod) params.append('startPeriod', filters.startPeriod);
     if (filters.endPeriod) params.append('endPeriod', filters.endPeriod);
 
-    const endpoint = `/v1/reports/${userId}/summary${params.toString() ? `?${params.toString()}` : ''}`;
+    const endpoint = `/v1/reports/summary${params.toString() ? `?${params.toString()}` : ''}`;
     const response = await reportsHttpClient.get<ReportResponse>(endpoint);
     return reportAdapter(response.data);
 };
 
-export const getReportByPeriod = async (userId: string, filters: Required<Pick<ReportFilters, 'period'>>): Promise<ReportModel> => {
-    const endpoint = `/v1/reports/${userId}?period=${filters.period}`;
+export const getReportByPeriod = async (filters: Required<Pick<ReportFilters, 'period'>>): Promise<ReportModel> => {
+    const endpoint = `/v1/reports?period=${filters.period}`;
     const response = await reportsHttpClient.get<ReportItemResponse>(endpoint);
     return reportListAdapter([response.data])[0];
 };
@@ -29,8 +29,8 @@ export const getReportByPeriod = async (userId: string, filters: Required<Pick<R
  * US-021 — Descargar Reporte de un Período como PDF
  * Fase TDD: 🔵 REFACTOR — Separación de responsabilidades
  */
-export const downloadReportPdf = async (userId: string, period: string): Promise<void> => {
-    const endpoint = `/v1/reports/${userId}/pdf?period=${period}`;
+export const downloadReportPdf = async (period: string): Promise<void> => {
+    const endpoint = `/v1/reports/pdf?period=${period}`;
     const response = await reportsHttpClient.get(endpoint, {
         responseType: 'blob',
     });
@@ -64,10 +64,9 @@ const triggerBlobDownload = (data: BlobPart, fileName: string, mimeType: string)
 export const deleteReport = async (id: string | number): Promise<void> => {
     await reportsHttpClient.delete(`/v1/reports/${id}`);
 };
-export const recalculateReport = async (userId: string, period: string): Promise<RecalculateReportResponse> => {
-    const endpoint = 'v1/reports/recalculate';
+export const recalculateReport = async (period: string): Promise<RecalculateReportResponse> => {
+    const endpoint = '/v1/reports/recalculate';
     const body: RecalculateReportRequest = {
-        userId,
         period,
     };
     const response = await reportsHttpClient.post<RecalculateReportResponse>(endpoint, body);

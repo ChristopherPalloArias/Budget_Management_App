@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.web.client.RestTemplate;
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.exception.ReportNotFoundException;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
@@ -55,12 +56,15 @@ class ReportServiceImplTest {
     @Mock
     private ReportRepository reportRepository;
 
+    @Mock
+    private RestTemplate restTemplate;
+
     private ReportService reportService;
 
     @BeforeEach
     void setUp() {
-        // Crear instancia del servicio con repositorio mockeado
-        reportService = new ReportServiceImpl(reportRepository);
+        // Crear instancia del servicio con mocks
+        reportService = new ReportServiceImpl(reportRepository, restTemplate);
     }
 
     // ==========================================

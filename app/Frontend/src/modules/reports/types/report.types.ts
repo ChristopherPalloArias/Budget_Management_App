@@ -46,7 +46,6 @@ export interface ReportFilters {
 
 // Recalculate Report Types
 export interface RecalculateReportRequest {
-    userId: string;
     period: string;
 }
 

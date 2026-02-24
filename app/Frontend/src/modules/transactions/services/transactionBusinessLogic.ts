@@ -15,7 +15,7 @@ export class ValidationError extends Error {
 export class TransactionBusinessLogic {
   async createTransaction(
     formData: TransactionFormData,
-    userId: string,
+    _userId: string,
   ): Promise<TransactionModel> {
     // Validation logic
     this.validateTransactionData(formData);
@@ -24,7 +24,7 @@ export class TransactionBusinessLogic {
     const processedData = this.applyBusinessRules(formData);
 
     // Call API
-    return await createTransaction(processedData, userId);
+    return await createTransaction(processedData);
   }
 
   async updateTransaction(

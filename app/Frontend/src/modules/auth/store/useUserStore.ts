@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { authRepository } from '@/core/config/dependencies';
+import { queryClient } from '@/core/config/queryClient';
 import type { IAuthUser } from '@/core/auth/interfaces';
+import { useTransactionStore } from '@/modules/transactions/store/useTransactionStore';
+import { useReportStore } from '@/modules/reports/store/useReportStore';
 
 interface UserState {
     user: IAuthUser | null;
@@ -31,9 +34,22 @@ export const useUserStore = create<UserState>()(
                 logout: async () => {
                     try {
                         await authRepository.signOut();
-                        set({ user: null, isAuthenticated: false });
                     } catch (error) {
-                        console.error('[Auth] Logout error:', error);
+                        console.error('[Auth] Logout backend error:', error);
+                    } finally {
+                        // 1. Limpiar estado de autenticación
+                        set({ user: null, isAuthenticated: false, isLoading: false });
+
+                        // 2. Resetear stores de datos de usuario (Zustand)
+                        useTransactionStore.getState().reset();
+                        useReportStore.getState().reset();
+
+                        // 3. Purgar TODO el cache de React Query
+                        //    Esto elimina queries en cache (transactions, reports, etc.)
+                        //    para que el próximo usuario no vea datos del usuario anterior
+                        queryClient.clear();
+
+                        console.log('[Auth] Logout complete — all stores and query cache cleared');
                     }
                 },
 
@@ -66,4 +82,3 @@ export const useUserStore = create<UserState>()(
         { name: 'User Store' }
     )
 );
-
