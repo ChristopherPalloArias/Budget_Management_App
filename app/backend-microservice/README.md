@@ -7,6 +7,7 @@
 
 ### Estructura de Directorios
 ```
+
 backend-microservice/
 ├── transaction/          # Microservicio de transacciones (puerto 8081)
 ├── report/              # Microservicio de reportes (puerto 8082)
