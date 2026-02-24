@@ -34,8 +34,7 @@ jobs:
 
       - name: Debug Maven Build
         run: |
-          mvn clean test
-          ls target || echo "Target directory not created"
+          mvn clean test -X
         working-directory: app/backend-microservice/auth
 
       - name: Run unit tests y Verificar Cobertura (70%)
