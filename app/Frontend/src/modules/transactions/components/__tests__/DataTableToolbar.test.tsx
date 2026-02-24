@@ -2,12 +2,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataTableToolbar } from "../DataTableToolbar";
 
+const mockOpenCreateModal = jest.fn();
+
+jest.mock('../TransactionModalsProvider', () => ({
+  useTransactionModals: () => ({
+    openCreateModal: mockOpenCreateModal,
+  }),
+}));
+
 describe("DataTableToolbar", () => {
   const mockOnSearchChange = jest.fn();
   const mockOnTypeFilterChange = jest.fn();
   const mockOnCategoryFilterChange = jest.fn();
   const mockOnResetFilters = jest.fn();
-  const mockOnCreateTransaction = jest.fn();
 
   const defaultProps = {
     searchQuery: "",
@@ -18,7 +25,6 @@ describe("DataTableToolbar", () => {
     onCategoryFilterChange: mockOnCategoryFilterChange,
     categories: ["Alimentación", "Transporte", "Vivienda", "Salario"],
     onResetFilters: mockOnResetFilters,
-    onCreateTransaction: mockOnCreateTransaction,
   };
 
   beforeEach(() => {
@@ -238,7 +244,7 @@ describe("DataTableToolbar", () => {
       await user.click(createButton);
 
       // Assert
-      expect(mockOnCreateTransaction).toHaveBeenCalledTimes(1);
+      expect(mockOpenCreateModal).toHaveBeenCalledTimes(1);
     });
 
     it("debe mostrar el icono Plus en el botón", () => {
