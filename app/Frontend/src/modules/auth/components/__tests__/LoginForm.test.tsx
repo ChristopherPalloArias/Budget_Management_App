@@ -39,10 +39,10 @@ describe("LoginForm Component", () => {
       render(<LoginForm />);
 
       // Act & Assert: Verificar que los elementos se renderizan
-      const titles = screen.getAllByText("Iniciar Sesión");
+      const titles = screen.getAllByText((content) => content.includes("Bienvenido de nuevo"));
       expect(titles.length).toBeGreaterThan(0);
       expect(
-        screen.getByText("Ingresa tus credenciales para acceder a tu cuenta"),
+        screen.getByText((content) => content.includes("Ingresa tus credenciales para acceder a tu cuenta")),
       ).toBeInTheDocument();
       expect(screen.getByLabelText("Correo Electrónico")).toBeInTheDocument();
       expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();

@@ -31,7 +31,7 @@ export const LoginForm = () => {
           Bienvenido de nuevo
         </h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium">
-          Ingresa tus credenciales para acceder a tu panel.
+          Ingresa tus credenciales para acceder a tu cuenta.
         </p>
       </div>
 
@@ -42,8 +42,9 @@ export const LoginForm = () => {
           </Label>
           <Input
             id="email"
-            type="email"
-            placeholder="nombre@empresa.com"
+            name="email"
+            placeholder="ejemplo@correo.com"
+            type="email" // Ensure correct type
             {...register('email')}
             disabled={isLoading}
             className={`w-full bg-transparent border-slate-200 dark:border-slate-800 rounded-xl p-6 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:text-white ${errors.email ? 'border-red-500 ring-red-500/10' : ''
@@ -55,15 +56,14 @@ export const LoginForm = () => {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" title="Contraseña" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
-              Contraseña
-            </Label>
-          </div>
+          <Label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+            Contraseña
+          </Label>
           <Input
             id="password"
-            type="password"
+            name="password"
             placeholder="••••••••"
+            type="password" // Ensure correct type
             {...register('password')}
             disabled={isLoading}
             className={`w-full bg-transparent border-slate-200 dark:border-slate-800 rounded-xl p-6 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:text-white ${errors.password ? 'border-red-500 ring-red-500/10' : ''
@@ -85,7 +85,7 @@ export const LoginForm = () => {
               <span>Iniciando sesión...</span>
             </div>
           ) : (
-            'Entrar a la plataforma'
+            'Iniciar Sesión'
           )}
         </Button>
       </form>
@@ -94,7 +94,7 @@ export const LoginForm = () => {
         <p className="text-sm text-slate-600 dark:text-slate-400">
           ¿Aún no tienes una cuenta?{' '}
           <Link to="/register" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-400 font-bold transition-colors">
-            Crea una cuenta gratuita
+            Regístrate aquí
           </Link>
         </p>
       </div>
