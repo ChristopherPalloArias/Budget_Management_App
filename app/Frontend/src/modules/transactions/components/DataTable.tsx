@@ -15,21 +15,11 @@ import type { TransactionModel } from "../types/transaction.types";
 
 interface DataTableProps {
   data: TransactionModel[];
-  onCreateTransaction: () => void;
-  onEditTransaction: (transaction: TransactionModel) => void;
-  onDeleteTransaction: (transaction: TransactionModel) => void;
-  isDeletingTransaction?: boolean;
 }
 
 const TRANSACTION_SEARCH_FIELDS: (keyof TransactionModel)[] = ["description"];
 
-export function DataTable({
-  data,
-  onCreateTransaction,
-  onEditTransaction,
-  onDeleteTransaction,
-  isDeletingTransaction = false,
-}: DataTableProps) {
+export function DataTable({ data }: DataTableProps) {
   const {
     state,
     paginatedData,
@@ -64,7 +54,6 @@ export function DataTable({
         onCategoryFilterChange={setCategoryFilter}
         categories={categories}
         onResetFilters={resetFilters}
-        onCreateTransaction={onCreateTransaction}
       />
 
       <Table>
@@ -84,9 +73,6 @@ export function DataTable({
               <TransactionTableRow
                 key={transaction.id}
                 transaction={transaction}
-                onEdit={onEditTransaction}
-                onDelete={onDeleteTransaction}
-                isDeleting={isDeletingTransaction}
               />
             ))
           ) : (

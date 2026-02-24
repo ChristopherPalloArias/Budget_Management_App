@@ -6,7 +6,6 @@ import {
   ValidationError,
 } from "@/modules/transactions/services/transactionBusinessLogic";
 import type { TransactionFormData } from "@/modules/transactions/types/transaction.types";
-import { useTransactionStore } from "@/modules/transactions/store/useTransactionStore";
 
 interface TransactionOperationResult {
   success: boolean;
@@ -17,10 +16,6 @@ export function useTransactionOperations() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const addTransaction = useTransactionStore((state) => state.addTransaction);
-  const updateTransaction = useTransactionStore(
-    (state) => state.updateTransaction,
-  );
 
   const createTransaction = async (
     formData: TransactionFormData,
@@ -30,11 +25,7 @@ export function useTransactionOperations() {
     setError(null);
 
     try {
-      const transaction = await transactionBusinessLogic.createTransaction(
-        formData,
-        userId,
-      );
-      addTransaction(transaction);
+      await transactionBusinessLogic.createTransaction(formData, userId);
 
       // Invalidate queries to refresh the transaction list
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -62,11 +53,7 @@ export function useTransactionOperations() {
     setError(null);
 
     try {
-      const transaction = await transactionBusinessLogic.updateTransaction(
-        id,
-        formData,
-      );
-      updateTransaction(transaction);
+      await transactionBusinessLogic.updateTransaction(id, formData);
 
       // Invalidate queries to refresh the transaction list
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });

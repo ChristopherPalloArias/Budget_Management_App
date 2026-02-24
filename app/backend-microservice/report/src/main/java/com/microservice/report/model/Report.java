@@ -48,6 +48,36 @@ public class Report {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    public void addIncome(BigDecimal amount) {
+        if (amount != null) {
+            this.totalIncome = this.totalIncome != null ? this.totalIncome.add(amount) : amount;
+            this.recalculateBalance();
+        }
+    }
+
+    public void addExpense(BigDecimal amount) {
+        if (amount != null) {
+            this.totalExpense = this.totalExpense != null ? this.totalExpense.add(amount) : amount;
+            this.recalculateBalance();
+        }
+    }
+
+    public void recalculateBalance() {
+        BigDecimal income = this.totalIncome != null ? this.totalIncome : BigDecimal.ZERO;
+        BigDecimal expense = this.totalExpense != null ? this.totalExpense : BigDecimal.ZERO;
+        this.balance = income.subtract(expense);
+    }
+
+    public void setTotalIncome(BigDecimal totalIncome) {
+        this.totalIncome = totalIncome;
+        this.recalculateBalance();
+    }
+
+    public void setTotalExpense(BigDecimal totalExpense) {
+        this.totalExpense = totalExpense;
+        this.recalculateBalance();
+    }
+
     @PrePersist
     public void prePersist() {
         OffsetDateTime now = OffsetDateTime.now();

@@ -6,24 +6,18 @@ import { getCategoryColor, getCategoryLabel } from "@/core/constants/categories.
 import { formatCurrency } from "@/shared/utils/currencyUtils";
 import { formatDate } from "@/lib/date-utils";
 import type { TransactionModel } from "../types/transaction.types";
+import { useTransactionModals } from "./TransactionModalsProvider";
 
 interface TransactionTableRowProps {
   transaction: TransactionModel;
-  onEdit: (transaction: TransactionModel) => void;
-  onDelete: (transaction: TransactionModel) => void;
-  isDeleting?: boolean;
 }
 
-export function TransactionTableRow({
-  transaction,
-  onEdit,
-  onDelete,
-  isDeleting = false,
-}: TransactionTableRowProps) {
+export function TransactionTableRow({ transaction }: TransactionTableRowProps) {
+  const { openEditModal, openDeleteModal } = useTransactionModals();
   const isIncome = transaction.type === "INCOME";
 
   return (
-    <TableRow key={transaction.id}>
+    <TableRow>
       <TableCell>{formatDate(transaction.date, 'dd/MM/yyyy')}</TableCell>
       <TableCell className="font-medium max-w-[200px] truncate">
         {transaction.description}
@@ -49,7 +43,7 @@ export function TransactionTableRow({
             variant="ghost"
             size="icon"
             aria-label="Editar transacción"
-            onClick={() => onEdit(transaction)}
+            onClick={() => openEditModal(transaction)}
             className="h-8 w-8 text-muted-foreground hover:text-primary"
           >
             <Pencil className="h-4 w-4" />
@@ -58,8 +52,7 @@ export function TransactionTableRow({
             variant="ghost"
             size="icon"
             aria-label="Eliminar transacción"
-            onClick={() => onDelete(transaction)}
-            disabled={isDeleting}
+            onClick={() => openDeleteModal(transaction)}
             className="h-8 w-8 text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />

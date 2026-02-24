@@ -2,6 +2,7 @@ import { Plus } from "lucide-react"
 import { Input } from "../../../components/ui/input"
 import { Button } from "../../../components/ui/button"
 import { DataTableFacetedFilter } from "./DataTableFacetedFilter"
+import { useTransactionModals } from "./TransactionModalsProvider"
 
 interface DataTableToolbarProps {
   searchQuery: string
@@ -12,7 +13,6 @@ interface DataTableToolbarProps {
   onCategoryFilterChange: (values: Set<string>) => void
   categories: string[]
   onResetFilters: () => void
-  onCreateTransaction: () => void
 }
 
 const typeOptions = [
@@ -29,8 +29,8 @@ export function DataTableToolbar({
   onCategoryFilterChange,
   categories,
   onResetFilters,
-  onCreateTransaction,
 }: DataTableToolbarProps) {
+  const { openCreateModal } = useTransactionModals()
   const categoryOptions = categories.map((category) => ({
     label: category,
     value: category,
@@ -65,7 +65,7 @@ export function DataTableToolbar({
           </Button>
         )}
       </div>
-      <Button size="sm" className="h-8 gap-1" onClick={onCreateTransaction}>
+      <Button size="sm" className="h-8 gap-1" onClick={openCreateModal}>
         <Plus className="h-3.5 w-3.5" />
         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
           Nueva Transacción

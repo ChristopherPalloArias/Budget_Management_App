@@ -4,7 +4,8 @@ import com.microservice.report.dto.PaginatedResponse;
 import com.microservice.report.dto.RecalculateReportRequest;
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
-import com.microservice.report.service.ReportService;
+import com.microservice.report.service.ReportCommandService;
+import com.microservice.report.service.ReportQueryService;
 import com.microservice.report.util.PaginationUtils;
 import com.microservice.report.validation.ValidPeriod;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +34,8 @@ import java.security.Principal;
 @Validated
 public class ReportController {
 
-    private final ReportService reportService;
+    private final ReportCommandService reportCommandService;
+    private final ReportQueryService reportQueryService;
 
     /**
      * Obtiene un reporte financiero para el usuario autenticado en un periodo específico.
@@ -46,7 +49,7 @@ public class ReportController {
             Principal principal,
             @RequestParam(required = false) @ValidPeriod String period) {
         String userId = principal.getName();
-        ReportResponse report = reportService.getReport(userId, period);
+        ReportResponse report = reportQueryService.getReport(userId, period);
         return ResponseEntity.ok(report);
     }
 
@@ -63,7 +66,7 @@ public class ReportController {
             @PageableDefault(size = 10, page = 0, sort = "period", direction = Sort.Direction.DESC) Pageable pageable) {
         String userId = principal.getName();
         Pageable safePageable = PaginationUtils.ensureSafePageSize(pageable);
-        return ResponseEntity.ok(reportService.getReportsByUserId(userId, safePageable));
+        return ResponseEntity.ok(reportQueryService.getReportsByUserId(userId, safePageable));
     }
 
     /**
@@ -80,7 +83,7 @@ public class ReportController {
             @RequestParam @ValidPeriod String startPeriod,
             @RequestParam @ValidPeriod String endPeriod) {
         String userId = principal.getName();
-        ReportSummary summary = reportService.getReportsByPeriodRange(userId, startPeriod, endPeriod);
+        ReportSummary summary = reportQueryService.getReportsByPeriodRange(userId, startPeriod, endPeriod);
         return ResponseEntity.ok(summary);
     }
 
@@ -100,9 +103,10 @@ public class ReportController {
     @PostMapping("/recalculate")
     public ResponseEntity<ReportResponse> recalculateReport(
             Principal principal,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String token,
             @Valid @RequestBody RecalculateReportRequest request) {
         String userId = principal.getName();
-        ReportResponse response = reportService.recalculateReport(userId, request.getPeriod());
+        ReportResponse response = reportCommandService.recalculateReport(userId, request.getPeriod(), token);
         return ResponseEntity.ok(response);
     }
 
@@ -118,7 +122,7 @@ public class ReportController {
             @PathVariable Long reportId,
             Principal principal) {
         String userId = principal.getName();
-        reportService.deleteReportById(userId, reportId);
+        reportCommandService.deleteReportById(userId, reportId);
     }
 
     /**
@@ -133,7 +137,7 @@ public class ReportController {
             @PathVariable String period,
             Principal principal) {
         String userId = principal.getName();
-        reportService.deleteReport(userId, period);
+        reportCommandService.deleteReport(userId, period);
     }
 }
 
