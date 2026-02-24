@@ -64,6 +64,9 @@ export function TransactionForm({
   }, [defaultValues, form]);
 
   const selectedType = form.watch("type");
+  const buttonLabel = isLoading
+    ? (isEditing ? "Actualizando..." : loadingLabel)
+    : (isEditing ? "Actualizar Transacción" : submitLabel);
 
   return (
     <Form {...form}>
@@ -169,11 +172,7 @@ export function TransactionForm({
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? loadingLabel : submitLabel}
-            {isLoading
-              ? (isEditing ? "Actualizando..." : "Creando...")
-              : (isEditing ? "Actualizar Transacción" : "Crear Transacción")
-            }
+            {buttonLabel}
           </Button>
         </div>
       </form>
