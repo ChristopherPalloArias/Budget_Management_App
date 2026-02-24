@@ -24,6 +24,8 @@ RUN addgroup -S spring && adduser -S spring -G spring
 # Copy the built jar from the build stage
 COPY --from=build /app/target/report-0.0.1-SNAPSHOT.jar app.jar
 
+# Set user and group ownership
+RUN chown -R spring:spring /app
 # Set permissions for the non-root user
 RUN chown spring:spring /app/app.jar
 

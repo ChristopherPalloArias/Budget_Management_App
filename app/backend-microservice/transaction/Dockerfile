@@ -1,8 +1,10 @@
 # Stage 1: Build
+# app/backend-microservice/transaction/Dockerfile
 FROM eclipse-temurin:17.0.10_7-jdk-alpine AS build
 
 # Set working directory
 WORKDIR /app
+
 
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd pom.xml ./

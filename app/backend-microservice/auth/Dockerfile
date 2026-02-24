@@ -1,3 +1,4 @@
+# app/backend-microservice/auth/Dockerfile
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 COPY mvnw mvnw.cmd pom.xml ./

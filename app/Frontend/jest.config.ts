@@ -37,7 +37,7 @@ const config: Config = {
           jsx: "react-jsx",
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
-          module: "esnext",
+          module: "commonjs",
           moduleResolution: "bundler",
           skipLibCheck: true,
           isolatedModules: true,

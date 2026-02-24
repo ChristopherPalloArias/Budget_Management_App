@@ -1,22 +1,191 @@
-version: '3.8'
-
-services:
-  backend:
-    build:
-      context: ./app/backend-microservice/report
-      dockerfile: Dockerfile
-    ports:
-      - "8082:8082"
-    volumes:
-      - ./app/backend-microservice/report/src:/app/src
-      - ./app/backend-microservice/report/target:/app/target
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - DB_USERNAME=dev_user
-      - DB_PASSWORD=dev_password
-    networks:
-      - app-network
+# ──────────────────────────────────────────────────────────────
+#  Budget Management App — Root Docker Compose
+#  Levanta TODOS los servicios con:  docker compose up --build
+# ──────────────────────────────────────────────────────────────
 
 networks:
-  app-network:
+  finance-network:
     driver: bridge
+
+services:
+  # ─── INFRASTRUCTURE ──────────────────────────────────────────
+
+  mysql-transactions:
+    image: mysql:8.0
+    container_name: mysql-transactions
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: transactions_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-transactions-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      timeout: 20s
+      retries: 10
+      interval: 3s
+    networks:
+      - finance-network
+
+  mysql-reports:
+    image: mysql:8.0
+    container_name: mysql-reports
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: reports_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-reports-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      timeout: 20s
+      retries: 10
+      interval: 3s
+    networks:
+      - finance-network
+
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      timeout: 20s
+      retries: 10
+      interval: 3s
+    networks:
+      - finance-network
+
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      timeout: 30s
+      retries: 5
+      interval: 10s
+    networks:
+      - finance-network
+
+  # ─── BACKEND MICROSERVICES ───────────────────────────────────
+
+  transaction:
+    build:
+      context: ./app/backend-microservice/transaction
+    container_name: transaction
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql-transactions:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-transactions:3306/transactions_db
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  report:
+    build:
+      context: ./app/backend-microservice/report
+    container_name: report
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql-reports:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reports:3306/reports_db
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  auth:
+    build:
+      context: ./app/backend-microservice/auth
+    container_name: auth
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/auth_db
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      JWT_SECRET: ${JWT_SECRET}
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  # ─── FRONTEND ────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./app/Frontend
+      args:
+        VITE_API_TRANSACTIONS_URL: http://localhost:8081/api
+        VITE_API_REPORTS_URL: http://localhost:8082/api
+        VITE_API_AUTH_URL: http://localhost:8083/api
+    container_name: finance-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - transaction
+      - report
+      - auth
+    restart: unless-stopped
+    networks:
+      - finance-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql-transactions-data:
+  mysql-reports-data:
+  mysql-auth-data:
