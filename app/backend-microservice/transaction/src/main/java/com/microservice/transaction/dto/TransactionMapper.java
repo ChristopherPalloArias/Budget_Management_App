@@ -7,12 +7,12 @@ import java.util.List;
 /**
  * Mapper entre DTOs y entidades Transaction.
  * 
- * Nota: El método toRequest ahora recibe separadamente el userId
- * (extraído del token JWT) para garantizar that el DTO no pueda
+ * Nota: El método toEntity ahora recibe separadamente el userId
+ * (extraído del token JWT) para garantizar que el DTO no pueda
  * especificar un userId diferente.
  */
 public class TransactionMapper {
-    public static Transaction toRequest(String userId, TransactionRequest dto) {
+    public static Transaction toEntity(String userId, TransactionRequest dto) {
         Transaction entity = new Transaction();
         entity.setUserId(userId);
         entity.setType(dto.type());

@@ -147,7 +147,7 @@ TransactionController.create(@Valid TransactionRequest dto)
     ▼
 TransactionServiceImpl.create(dto)
     │
-    ├── 1. TransactionMapper.toRequest(dto) → Transaction entity
+    ├── 1. TransactionMapper.toEntity(dto) → Transaction entity
     ├── 2. transactionRepository.save(entity) → saved entity
     ├── 3. eventPublisher.publishEvent(new TransactionCreatedEvent(this, saved))
     │      ↑ Evento INTERNO de Spring (ApplicationEvent)

@@ -72,7 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionResponse create(String userId, TransactionRequest dto) {
         validateAmount(dto.amount());
         
-        Transaction entity = TransactionMapper.toRequest(userId, dto);
+        Transaction entity = TransactionMapper.toEntity(userId, dto);
         
         Transaction saved = transactionRepository.save(entity);
         
@@ -84,7 +84,7 @@ public class TransactionServiceImpl implements TransactionService {
             // Logging defensivo: registrar el error de publicación para debugging.
             // La excepción se propaga para que Spring revierte la transacción.
             logger.error("Failed to publish transaction creation event for transaction ID: {} (userId: {}). " +
-                    "Database transaction will be rolled back.", saved.getId(), userId, ex);
+                    "Database transaction will be rolled back.", saved.getTransactionId(), userId, ex);
             throw ex;
         }
         
