@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,12 +33,16 @@ interface TransactionFormProps {
   onSubmit: (data: z.infer<typeof transactionFormSchema>) => void;
   isLoading?: boolean;
   defaultValues?: z.infer<typeof transactionFormSchema>;
+  submitLabel?: string;
+  loadingLabel?: string;
 }
 
 export function TransactionForm({
   onSubmit,
   isLoading,
   defaultValues,
+  submitLabel = "Crear Transacción",
+  loadingLabel = "Creando...",
 }: TransactionFormProps) {
   const form = useForm<z.infer<typeof transactionFormSchema>>({
     resolver: zodResolver(transactionFormSchema),
@@ -49,6 +54,12 @@ export function TransactionForm({
       date: new Date().toISOString().split("T")[0],
     },
   });
+
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
 
   const selectedType = form.watch("type");
 
@@ -156,7 +167,7 @@ export function TransactionForm({
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creando..." : "Crear Transacción"}
+            {isLoading ? loadingLabel : submitLabel}
           </Button>
         </div>
       </form>

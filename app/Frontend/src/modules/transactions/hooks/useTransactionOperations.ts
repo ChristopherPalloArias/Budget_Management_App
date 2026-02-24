@@ -60,6 +60,7 @@ export function useTransactionOperations() {
   ): Promise<TransactionOperationResult> => {
     setIsLoading(true);
     setError(null);
+    const toastId = toast.loading("Actualizando transacción...");
 
     try {
       const transaction = await transactionBusinessLogic.updateTransaction(
@@ -69,8 +70,11 @@ export function useTransactionOperations() {
       updateTransaction(transaction);
 
       // Invalidate queries to refresh the transaction list
-      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Transacción actualizada con éxito");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
+      ]);
+      toast.success("Transacción actualizada con éxito", { id: toastId });
 
       return { success: true };
     } catch (err) {
@@ -79,7 +83,7 @@ export function useTransactionOperations() {
           ? err.message
           : "Failed to update transaction";
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage, { id: toastId });
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);

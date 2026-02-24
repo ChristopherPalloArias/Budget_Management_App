@@ -16,11 +16,12 @@ import type { TransactionModel } from "../types/transaction.types";
 interface DataTableProps {
   data: TransactionModel[];
   onCreateTransaction: () => void;
+  onEditTransaction?: (transaction: TransactionModel) => void;
 }
 
 const TRANSACTION_SEARCH_FIELDS: (keyof TransactionModel)[] = ["description"];
 
-export function DataTable({ data, onCreateTransaction }: DataTableProps) {
+export function DataTable({ data, onCreateTransaction, onEditTransaction }: DataTableProps) {
   const {
     state,
     paginatedData,
@@ -41,6 +42,8 @@ export function DataTable({ data, onCreateTransaction }: DataTableProps) {
 
   const hasData = paginatedData.length > 0;
   const hasFilters = state.searchQuery || state.selectedType.size > 0 || state.selectedCategory.size > 0;
+  const hasEditAction = Boolean(onEditTransaction);
+  const columnCount = hasEditAction ? 6 : 5;
 
   return (
     <div className="space-y-4">
@@ -66,6 +69,7 @@ export function DataTable({ data, onCreateTransaction }: DataTableProps) {
             <TableHead>Categoría</TableHead>
             <TableHead>Monto</TableHead>
             <TableHead>Tipo</TableHead>
+            {hasEditAction && <TableHead className="text-right">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -74,11 +78,12 @@ export function DataTable({ data, onCreateTransaction }: DataTableProps) {
               <TransactionTableRow
                 key={transaction.id}
                 transaction={transaction}
+                onEdit={hasEditAction ? () => onEditTransaction?.(transaction) : undefined}
               />
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={columnCount} className="h-24 text-center">
                 {hasFilters ? (
                   <>
                     No se encontraron transacciones con los filtros aplicados.

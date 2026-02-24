@@ -18,11 +18,27 @@ export function TransactionPage() {
     isLoading,
     fetchError,
     isCreating,
+    isEditing,
     operationError,
     openCreateDialog,
     closeCreateDialog,
+    openEditDialog,
+    closeEditDialog,
     handleCreateTransaction,
+    handleEditTransaction,
   } = useTransactionPage();
+
+  const editDefaultValues = state.selectedTransaction
+    ? {
+        description: state.selectedTransaction.description,
+        amount: state.selectedTransaction.amount,
+        category: state.selectedTransaction.category,
+        type: state.selectedTransaction.type,
+        date: new Date(state.selectedTransaction.date)
+          .toISOString()
+          .split("T")[0],
+      }
+    : undefined;
 
   if (!userId) return null;
 
@@ -45,6 +61,7 @@ export function TransactionPage() {
       <DataTable
         data={transactions}
         onCreateTransaction={openCreateDialog}
+        onEditTransaction={openEditDialog}
       />
 
       <Dialog open={state.isCreateDialogOpen} onOpenChange={closeCreateDialog}>
@@ -56,6 +73,23 @@ export function TransactionPage() {
             onSubmit={handleCreateTransaction}
             isLoading={isCreating}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={state.isEditDialogOpen} onOpenChange={closeEditDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Transacción</DialogTitle>
+          </DialogHeader>
+          {editDefaultValues && (
+            <TransactionForm
+              onSubmit={handleEditTransaction}
+              isLoading={isEditing}
+              defaultValues={editDefaultValues}
+              submitLabel="Guardar cambios"
+              loadingLabel="Guardando..."
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
