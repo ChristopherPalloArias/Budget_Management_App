@@ -35,7 +35,7 @@ export const RegisterForm = () => {
                     Crea tu cuenta
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 font-medium">
-                    Únete para empezar a gestionar tu presupuesto.
+                    Completa el formulario para crear tu cuenta.
                 </p>
             </div>
 
@@ -67,7 +67,7 @@ export const RegisterForm = () => {
                     <Input
                         id="email"
                         type="email"
-                        placeholder="nombre@empresa.com"
+                        placeholder="ejemplo@correo.com"
                         {...register('email')}
                         disabled={isLoading}
                         className={`w-full bg-transparent border-slate-200 dark:border-slate-800 rounded-xl p-6 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:text-white ${errors.email ? 'border-red-500 ring-red-500/10' : ''

@@ -28,10 +28,10 @@ describe("RegisterForm Component", () => {
       render(<RegisterForm />);
 
       // Assert: Verificar que todos los elementos se renderizan
-      const titles = screen.getAllByText("Crear Cuenta");
+      const titles = screen.getAllByText((content) => content.includes("Crea tu cuenta"));
       expect(titles.length).toBeGreaterThan(0);
       expect(
-        screen.getByText("Completa el formulario para crear tu cuenta"),
+        screen.getByText((content) => content.includes("Completa el formulario para crear tu cuenta")),
       ).toBeInTheDocument();
       expect(screen.getByLabelText("Nombre Completo")).toBeInTheDocument();
       expect(screen.getByLabelText("Correo Electrónico")).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("RegisterForm Component", () => {
       render(<RegisterForm />);
 
       // Act & Assert
-      const loginLink = screen.getByText("Inicia sesión aquí");
+      const loginLink = screen.getByText((content) => content.includes("Inicia sesión aquí"));
       expect(loginLink).toBeInTheDocument();
       expect(loginLink).toHaveAttribute("href", "/login");
     });
