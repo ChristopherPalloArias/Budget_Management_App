@@ -65,6 +65,8 @@ describe("DataTable", () => {
   ];
 
   const mockOnCreateTransaction = jest.fn();
+  const mockOnEditTransaction = jest.fn();
+  const mockOnDeleteTransaction = jest.fn();
 
   const defaultHookReturn = {
     state: {
@@ -99,6 +101,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -115,6 +119,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -132,6 +138,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -151,6 +159,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -168,6 +178,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -189,7 +201,12 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable data={[]} onCreateTransaction={mockOnCreateTransaction} />,
+        <DataTable
+          data={[]}
+          onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
+        />,
       );
 
       // Assert
@@ -222,6 +239,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -257,6 +276,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -287,6 +308,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -317,6 +340,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -349,6 +374,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -366,6 +393,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -405,6 +434,8 @@ describe("DataTable", () => {
         <DataTable
           data={manyTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -432,6 +463,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -451,6 +484,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -474,6 +509,8 @@ describe("DataTable", () => {
         <DataTable
           data={mockTransactions}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 
@@ -506,6 +543,8 @@ describe("DataTable", () => {
         <DataTable
           data={[longDescriptionTransaction]}
           onCreateTransaction={mockOnCreateTransaction}
+          onEditTransaction={mockOnEditTransaction}
+          onDeleteTransaction={mockOnDeleteTransaction}
         />,
       );
 

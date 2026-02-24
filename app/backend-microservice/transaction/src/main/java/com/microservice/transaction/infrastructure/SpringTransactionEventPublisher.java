@@ -1,6 +1,7 @@
 package com.microservice.transaction.infrastructure;
 
 import com.microservice.transaction.event.TransactionCreatedEvent;
+import com.microservice.transaction.event.TransactionDeletedEvent;
 import com.microservice.transaction.event.TransactionUpdatedEvent;
 import com.microservice.transaction.model.Transaction;
 import com.microservice.transaction.service.port.TransactionEventPublisherPort;
@@ -21,5 +22,10 @@ public class SpringTransactionEventPublisher implements TransactionEventPublishe
     @Override
     public void publishUpdated(Transaction transaction) {
         eventPublisher.publishEvent(new TransactionUpdatedEvent(this, transaction));
+    }
+
+    @Override
+    public void publishDeleted(Transaction transaction) {
+        eventPublisher.publishEvent(new TransactionDeletedEvent(this, transaction));
     }
 }

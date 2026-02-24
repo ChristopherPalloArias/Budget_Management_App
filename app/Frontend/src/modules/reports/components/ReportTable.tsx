@@ -117,10 +117,14 @@ export function ReportTable({ data, isLoading }: ReportTableProps) {
               paginatedData.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell>
-                    {report.period ? new Date(report.period + '-01').toLocaleDateString("es-CO", {
-                      month: "long",
-                      year: "numeric"
-                    }) : ''}
+                    {report.period ? (() => {
+                      const [year, month] = report.period.split("-");
+                      const date = new Date(Number(year), Number(month) - 1, 1);
+                      return date.toLocaleDateString("es-CO", {
+                        month: "long",
+                        year: "numeric",
+                      });
+                    })() : ""}
                   </TableCell>
                   <TableCell className="text-green-600 font-semibold">
                     {new Intl.NumberFormat("es-CO", {

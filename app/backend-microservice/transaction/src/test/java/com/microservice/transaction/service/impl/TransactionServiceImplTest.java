@@ -42,8 +42,8 @@ class TransactionServiceImplTest {
     @Test
     @DisplayName("create — happy path: persists transaction, publishes event, returns response")
     void create_withValidRequest_shouldPersistAndPublishEvent() {
+        String userId = "user-001";
         TransactionRequest mockRequest = mock(TransactionRequest.class);
-        when(mockRequest.userId()).thenReturn("user-001");
         when(mockRequest.type()).thenReturn(TransactionType.INCOME);
         when(mockRequest.amount()).thenReturn(new BigDecimal("2500.50"));
         when(mockRequest.category()).thenReturn("Salario");
@@ -63,7 +63,7 @@ class TransactionServiceImplTest {
         when(transactionRepository.save(any(Transaction.class)))
                 .thenReturn(mockSavedTransaction);
 
-        TransactionResponse response = transactionService.create(mockRequest);
+        TransactionResponse response = transactionService.create(userId, mockRequest);
 
         verify(transactionRepository).save(transactionCaptor.capture());
         Transaction savedEntity = transactionCaptor.getValue();
@@ -112,9 +112,9 @@ class TransactionServiceImplTest {
     @Test
     @DisplayName("update — happy path: updates transaction and publishes event")
     void shouldUpdateTransactionSuccessfully_andPublishEvent() {
+        String userId = "user-123";
         Long transactionId = 123L;
         TransactionRequest request = new TransactionRequest(
-                "user-123",
                 TransactionType.EXPENSE,
                 new BigDecimal("150.00"),
                 "Alimentacion",
@@ -147,7 +147,7 @@ class TransactionServiceImplTest {
         when(transactionRepository.findById(transactionId)).thenReturn(Optional.of(existing));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(saved);
 
-        TransactionResponse response = transactionService.updateTransaction(transactionId, request);
+        TransactionResponse response = transactionService.updateTransaction(userId, transactionId, request);
 
         assertAll("Respuesta de actualizacion",
                 () -> assertNotNull(response, "La respuesta no debe ser nula"),
@@ -164,9 +164,9 @@ class TransactionServiceImplTest {
     @Test
     @DisplayName("update — not found: throws NotFoundException and does not publish event")
     void shouldReturn404_whenTransactionNotFound() {
+        String userId = "user-123";
         Long transactionId = 999L;
         TransactionRequest request = new TransactionRequest(
-                "user-123",
                 TransactionType.EXPENSE,
                 new BigDecimal("150.00"),
                 "Alimentacion",
@@ -177,7 +177,7 @@ class TransactionServiceImplTest {
         when(transactionRepository.findById(transactionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> transactionService.updateTransaction(transactionId, request),
+                () -> transactionService.updateTransaction(userId, transactionId, request),
                 "Should throw NotFoundException when transaction does not exist"
         );
 
@@ -189,8 +189,8 @@ class TransactionServiceImplTest {
     @Test
     @DisplayName("update — bad request: rejects negative amount and does not publish event")
     void shouldReturn400_whenAmountIsNegative() {
+        String userId = "user-123";
         TransactionRequest request = new TransactionRequest(
-                "user-123",
                 TransactionType.EXPENSE,
                 new BigDecimal("-10.00"),
                 "Alimentacion",
@@ -199,7 +199,7 @@ class TransactionServiceImplTest {
         );
 
         assertThrows(ValidationException.class,
-                () -> transactionService.updateTransaction(123L, request),
+                () -> transactionService.updateTransaction(userId, 123L, request),
                 "Should reject negative amount"
         );
 

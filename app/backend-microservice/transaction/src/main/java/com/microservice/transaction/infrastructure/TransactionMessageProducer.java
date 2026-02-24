@@ -21,6 +21,11 @@ public class TransactionMessageProducer {
         rabbitTemplate.convertAndSend("transaction-exchange", "transaction.updated", message);
     }
 
+    public void sendDeleted(Transaction transaction) {
+        TransactionMessage message = toMessage(transaction);
+        rabbitTemplate.convertAndSend("transaction-exchange", "transaction.deleted", message);
+    }
+
     private TransactionMessage toMessage(Transaction transaction) {
         return TransactionMessage.builder()
                 .transactionId(transaction.getTransactionId())
