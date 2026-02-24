@@ -128,7 +128,7 @@ export const RegisterForm = () => {
                             <span>Creando cuenta...</span>
                         </div>
                     ) : (
-                        'Comenzar Ahora'
+                        'Crear Cuenta'
                     )}
                 </Button>
             </form>
