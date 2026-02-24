@@ -1,0 +1,137 @@
+# ──────────────────────────────────────────────────────────────
+#  Budget Management App — DYNAMIC DEPLOYMENT & MONITORING
+# ──────────────────────────────────────────────────────────────
+
+networks:
+  finance-network:
+    driver: bridge
+
+services:
+  # ─── AGENTE APM (SITE24X7) ───────────────────────────────────
+  site24x7-agent:
+    image: site24x7/docker-agent:latest
+    container_name: site24x7-agent
+    environment:
+      - SITE24X7_KEY=${SITE24X7_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/:/host/sys/:ro
+    restart: unless-stopped
+    networks:
+      - finance-network
+
+  # ─── INFRAESTRUCTURA (Bases de datos y RabbitMQ) ─────────────
+  # (Mantenemos la sintaxis de variables de entorno para seguridad)
+  mysql-transactions:
+    image: mysql:8.0
+    container_name: mysql-transactions-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: transactions_db
+    ports:
+      - "3307:3306"
+    networks:
+      - finance-network
+    restart: unless-stopped
+
+  mysql-reports:
+    image: mysql:8.0
+    container_name: mysql-reports-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: reports_db
+    ports:
+      - "3308:3306"
+    networks:
+      - finance-network
+    restart: unless-stopped
+
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3309:3306"
+    networks:
+      - finance-network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    container_name: rabbitmq-prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672:5672"
+    networks:
+      - finance-network
+    restart: unless-stopped
+    labels:
+      - "site24x7.monitor=true"
+
+  # ─── MICROSERVICIOS TOTALMENTE DINÁMICOS ─────────────────────
+  transaction:
+    # Usa las variables dinámicas del entorno (evita quemar usuarios o tags)
+    image: ${DOCKERHUB_USERNAME}/budget-transaction:${IMAGE_TAG:-latest}
+    container_name: transaction-prod
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql-transactions
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-transactions:3306/transactions_db
+      JWT_SECRET: ${JWT_SECRET}
+    restart: unless-stopped
+    networks:
+      - finance-network
+    labels:
+      - "site24x7.monitor=true"
+
+  report:
+    image: ${DOCKERHUB_USERNAME}/budget-report:${IMAGE_TAG:-latest}
+    container_name: report-prod
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql-reports
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reports:3306/reports_db
+      JWT_SECRET: ${JWT_SECRET}
+    restart: unless-stopped
+    networks:
+      - finance-network
+    labels:
+      - "site24x7.monitor=true"
+
+  auth:
+    image: ${DOCKERHUB_USERNAME}/budget-auth:${IMAGE_TAG:-latest}
+    container_name: auth-prod
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mysql-auth
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/auth_db
+      JWT_SECRET: ${JWT_SECRET}
+    restart: unless-stopped
+    networks:
+      - finance-network
+    labels:
+      - "site24x7.monitor=true"
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/budget-frontend:${IMAGE_TAG:-latest}
+    container_name: frontend-prod
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - finance-network
+    labels:
+      - "site24x7.monitor=true"

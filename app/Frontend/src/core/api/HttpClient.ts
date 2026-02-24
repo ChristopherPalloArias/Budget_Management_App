@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
 import { API_TIMEOUT, HTTP_STATUS } from '@/core/constants/app.constants';
+import { type TokenProvider } from './TokenProvider';
 
 export type ServiceType = 'transactions' | 'reports' | 'auth';
 
@@ -9,6 +10,11 @@ interface HttpClientConfig {
 
 class HttpClient {
   private static instances: Map<ServiceType, AxiosInstance> = new Map();
+  private static tokenProvider: TokenProvider | null = null;
+
+  static setTokenProvider(provider: TokenProvider): void {
+    this.tokenProvider = provider;
+  }
 
   static getInstance(serviceType: ServiceType, config?: HttpClientConfig): AxiosInstance {
     if (this.instances.has(serviceType)) {
@@ -47,8 +53,8 @@ class HttpClient {
   private static setupInterceptors(instance: AxiosInstance, serviceType: ServiceType): void {
     instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        // Attach JWT Bearer token if available (for authenticated requests)
-        const token = localStorage.getItem('auth_token');
+        // Attach JWT Bearer token if available (for authenticated requests) using TokenProvider
+        const token = this.tokenProvider ? this.tokenProvider.getToken() : null;
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }

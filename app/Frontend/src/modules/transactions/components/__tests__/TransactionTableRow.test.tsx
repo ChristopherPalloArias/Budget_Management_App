@@ -21,6 +21,14 @@ jest.mock("@/core/constants/categories.constants", () => ({
   getCategoryLabel: jest.fn((category: string) => category),
 }));
 
+jest.mock("../TransactionModalsProvider", () => ({
+  useTransactionModals: jest.fn(() => ({
+    openCreateModal: jest.fn(),
+    openEditModal: jest.fn(),
+    openDeleteModal: jest.fn(),
+  })),
+}));
+
 describe("TransactionTableRow", () => {
   const mockOnEdit = jest.fn();
   const mockOnDelete = jest.fn();
@@ -56,7 +64,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockIncomeTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockIncomeTransaction} />
           </tbody>
         </table>,
       );
@@ -72,7 +80,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockIncomeTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockIncomeTransaction} />
           </tbody>
         </table>,
       );
@@ -87,7 +95,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockIncomeTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockIncomeTransaction} />
           </tbody>
         </table>,
       );
@@ -101,7 +109,7 @@ describe("TransactionTableRow", () => {
       render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockIncomeTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockIncomeTransaction} />
           </tbody>
         </table>,
       );
@@ -118,7 +126,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -134,7 +142,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -149,7 +157,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -163,7 +171,7 @@ describe("TransactionTableRow", () => {
       render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -180,7 +188,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockIncomeTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockIncomeTransaction} />
           </tbody>
         </table>,
       );
@@ -195,7 +203,7 @@ describe("TransactionTableRow", () => {
       render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -211,7 +219,7 @@ describe("TransactionTableRow", () => {
       render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={mockExpenseTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={mockExpenseTransaction} />
           </tbody>
         </table>,
       );
@@ -232,7 +240,7 @@ describe("TransactionTableRow", () => {
       render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={longDescriptionTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={longDescriptionTransaction} />
           </tbody>
         </table>,
       );
@@ -258,7 +266,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={largeAmountTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={largeAmountTransaction} />
           </tbody>
         </table>,
       );
@@ -278,7 +286,7 @@ describe("TransactionTableRow", () => {
       const { container } = render(
         <table>
           <tbody>
-            <TransactionTableRow transaction={decimalAmountTransaction} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+            <TransactionTableRow transaction={decimalAmountTransaction} />
           </tbody>
         </table>,
       );
