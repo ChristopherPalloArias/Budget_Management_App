@@ -3,6 +3,7 @@ package com.microservice.report.infrastructure;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
 import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
+import com.microservice.report.dto.RecordTransactionCommand;
 import com.microservice.report.repository.ReportRepository;
 import com.microservice.report.service.ReportCommandService;
 import org.junit.jupiter.api.DisplayName;
@@ -56,12 +57,12 @@ class ReportConsumerTest {
 
         consumer.consumeUpdated(updatedMessage);
 
-        ArgumentCaptor<TransactionMessage> messageCaptor = ArgumentCaptor.forClass(TransactionMessage.class);
+        ArgumentCaptor<RecordTransactionCommand> messageCaptor = ArgumentCaptor.forClass(RecordTransactionCommand.class);
         InOrder inOrder = inOrder(reportCommandService);
         inOrder.verify(reportCommandService, times(2)).updateReport(messageCaptor.capture(), anyString());
 
-        TransactionMessage reversal = messageCaptor.getAllValues().get(0);
-        TransactionMessage applied = messageCaptor.getAllValues().get(1);
+        RecordTransactionCommand reversal = messageCaptor.getAllValues().get(0);
+        RecordTransactionCommand applied = messageCaptor.getAllValues().get(1);
 
         assertEquals(new BigDecimal("-100.00"), reversal.amount(),
                 "Reversal should negate previous amount");
@@ -94,12 +95,12 @@ class ReportConsumerTest {
 
         consumer.consumeUpdated(updatedMessage);
 
-        ArgumentCaptor<TransactionMessage> messageCaptor = ArgumentCaptor.forClass(TransactionMessage.class);
+        ArgumentCaptor<RecordTransactionCommand> messageCaptor = ArgumentCaptor.forClass(RecordTransactionCommand.class);
         InOrder inOrder = inOrder(reportCommandService);
         inOrder.verify(reportCommandService, times(2)).updateReport(messageCaptor.capture(), anyString());
 
-        TransactionMessage reversal = messageCaptor.getAllValues().get(0);
-        TransactionMessage applied = messageCaptor.getAllValues().get(1);
+        RecordTransactionCommand reversal = messageCaptor.getAllValues().get(0);
+        RecordTransactionCommand applied = messageCaptor.getAllValues().get(1);
 
         assertEquals(LocalDate.of(2025, 3, 10), reversal.date(),
                 "Reversal should use the previous date");
@@ -131,11 +132,11 @@ class ReportConsumerTest {
 
         doThrow(new IllegalArgumentException("invalid message"))
                 .when(reportCommandService)
-                .updateReport(any(TransactionMessage.class), anyString());
+                .updateReport(any(RecordTransactionCommand.class), anyString());
 
         assertDoesNotThrow(() -> consumer.consumeUpdated(invalidMessage),
                 "Consumer should handle retries and route invalid messages to the DLQ");
-        verify(reportCommandService, times(3)).updateReport(eq(invalidMessage), anyString());
+        verify(reportCommandService, times(3)).updateReport(any(RecordTransactionCommand.class), anyString());
         verifyNoInteractions(reportRepository);
     }
 }

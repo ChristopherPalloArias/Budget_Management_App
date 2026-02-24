@@ -2,7 +2,7 @@ package com.microservice.report.service.impl;
 
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.exception.ReportNotFoundException;
-import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.dto.RecordTransactionCommand;
 import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.mapper.ReportMapper;
 import com.microservice.report.model.Report;
@@ -37,19 +37,23 @@ public class ReportCommandServiceImpl implements ReportCommandService {
 
     @Transactional
     @Override
-    public void updateReport(TransactionMessage transactionMessage, String messageId) {
+    public void updateReport(RecordTransactionCommand command, String messageId) {
         if (messageId != null && processedMessageRepository.existsById(messageId)) {
-            log.info("Message {} already processed. Ignoring.", messageId);
+            log.warn("Mensaje iterativo ignorado, ya ha sido procesado. ID: {}", messageId);
             return;
         }
 
-        Report report = getOrCreateReport(transactionMessage);
-        BigDecimal amount = transactionMessage.amount();
+        String userId = command.userId();
+        String period = extractPeriodFromDate(command.date());
 
-        if (transactionMessage.type() == TransactionType.INCOME) {
-            report.addIncome(amount);
-        } else if (transactionMessage.type() == TransactionType.EXPENSE) {
-            report.addExpense(amount);
+        Report report = reportRepository.findByUserIdAndPeriod(userId, period)
+                .orElseGet(() -> createNewReport(userId, period));
+
+        // Actualizar totales usando el modelo de dominio rico
+        if ("INCOME".equalsIgnoreCase(command.type())) {
+            report.addIncome(command.amount());
+        } else if ("EXPENSE".equalsIgnoreCase(command.type())) {
+            report.addExpense(command.amount());
         }
 
         reportRepository.save(report);
@@ -88,14 +92,14 @@ public class ReportCommandServiceImpl implements ReportCommandService {
 
     @Transactional
     @Override
-    public ReportResponse recalculateReport(String userId, String period) {
+    public ReportResponse recalculateReport(String userId, String period, String token) {
         validateUserId(userId);
         validatePeriod(period);
 
         Report report = reportRepository.findByUserIdAndPeriod(userId, period)
                 .orElseThrow(() -> new ReportNotFoundException(userId, period));
 
-        List<TransactionClient.TransactionData> transactions = transactionClient.fetchTransactions(period);
+        List<TransactionClient.TransactionData> transactions = transactionClient.fetchTransactions(period, token);
 
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpense = BigDecimal.ZERO;
@@ -113,14 +117,6 @@ public class ReportCommandServiceImpl implements ReportCommandService {
 
         Report savedReport = reportRepository.save(report);
         return ReportMapper.toResponse(savedReport);
-    }
-
-    private Report getOrCreateReport(TransactionMessage transactionMessage) {
-        validateTransactionMessage(transactionMessage);
-        String userId = transactionMessage.userId();
-        String period = extractPeriodFromDate(transactionMessage.date());
-        return reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseGet(() -> createNewReport(userId, period));
     }
 
     private String extractPeriodFromDate(java.time.LocalDate date) {
@@ -159,13 +155,5 @@ public class ReportCommandServiceImpl implements ReportCommandService {
             throw new IllegalArgumentException(
                     String.format("Invalid period format: %s. Expected format: yyyy-MM", period));
         }
-    }
-
-    private void validateTransactionMessage(TransactionMessage transactionMessage) {
-        Objects.requireNonNull(transactionMessage, "transactionMessage cannot be null");
-        validateUserId(transactionMessage.userId());
-        Objects.requireNonNull(transactionMessage.date(), "transactionMessage.date cannot be null");
-        Objects.requireNonNull(transactionMessage.amount(), "transactionMessage.amount cannot be null");
-        Objects.requireNonNull(transactionMessage.type(), "transactionMessage.type cannot be null");
     }
 }

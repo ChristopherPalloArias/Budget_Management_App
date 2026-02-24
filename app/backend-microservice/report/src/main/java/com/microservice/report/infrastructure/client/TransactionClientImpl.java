@@ -9,11 +9,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import com.microservice.report.exception.ServiceIntegrationException;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -28,12 +27,12 @@ public class TransactionClientImpl implements TransactionClient {
     private String transactionServiceUrl;
 
     @Override
-    public List<TransactionData> fetchTransactions(String period) {
-        String jwt = getJwtFromContext();
+    public List<TransactionData> fetchTransactions(String period, String token) {
         String url = transactionServiceUrl + "/transactions?period=" + period + "&size=1000";
 
         HttpHeaders headers = new HttpHeaders();
-        if (jwt != null) {
+        if (token != null) {
+            String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
             headers.set("Authorization", "Bearer " + jwt);
         }
         HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -50,22 +49,15 @@ public class TransactionClientImpl implements TransactionClient {
                 return response.getBody().content();
             }
             return Collections.emptyList();
+        } catch (HttpStatusCodeException e) {
+            throw new ServiceIntegrationException(
+                    "Error from transaction service: HTTP " + e.getStatusCode() + " - " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Error al conectar con el microservicio de transacciones: " + e.getMessage(), e);
+            throw new ServiceIntegrationException("Error connecting to transaction service: " + e.getMessage(), e);
         }
     }
 
-    private String getJwtFromContext() {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attributes != null) {
-            HttpServletRequest request = attributes.getRequest();
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                return authHeader.substring(7);
-            }
-        }
-        return null;
-    }
+
 
     private record PaginatedTransactionResponse(List<TransactionData> content) {}
 }

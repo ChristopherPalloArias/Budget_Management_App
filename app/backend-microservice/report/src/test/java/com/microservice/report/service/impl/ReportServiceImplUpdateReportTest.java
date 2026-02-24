@@ -8,8 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.microservice.report.infrastructure.dto.TransactionMessage;
-import com.microservice.report.infrastructure.dto.TransactionType;
+import com.microservice.report.dto.RecordTransactionCommand;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
 import com.microservice.report.service.TransactionClient;
@@ -51,8 +50,7 @@ class ReportServiceImplUpdateReportTest {
         String period = "2026-02";
         BigDecimal txAmount = BigDecimal.valueOf(500);
         
-        TransactionMessage message = new TransactionMessage(
-            1L, userId, TransactionType.INCOME, txAmount, date, "Salary", null, null, null);
+        RecordTransactionCommand command = new RecordTransactionCommand(userId, "INCOME", txAmount, date);
         
         Report existingReport = Report.builder()
                 .reportId(1L)
@@ -66,7 +64,7 @@ class ReportServiceImplUpdateReportTest {
         when(processedMessageRepository.existsById("msg-1")).thenReturn(false);
         when(reportRepository.findByUserIdAndPeriod(userId, period)).thenReturn(Optional.of(existingReport));
         
-        reportCommandService.updateReport(message, "msg-1");
+        reportCommandService.updateReport(command, "msg-1");
         
         ArgumentCaptor<Report> reportCaptor = ArgumentCaptor.forClass(Report.class);
         verify(reportRepository).save(reportCaptor.capture());
@@ -86,8 +84,7 @@ class ReportServiceImplUpdateReportTest {
         String period = "2026-02";
         BigDecimal txAmount = BigDecimal.valueOf(100);
         
-        TransactionMessage message = new TransactionMessage(
-            2L, userId, TransactionType.EXPENSE, txAmount, date, "Food", null, null, null);
+        RecordTransactionCommand command = new RecordTransactionCommand(userId, "EXPENSE", txAmount, date);
         
         Report existingReport = Report.builder()
                 .reportId(1L)
@@ -101,7 +98,7 @@ class ReportServiceImplUpdateReportTest {
         when(processedMessageRepository.existsById("msg-2")).thenReturn(false);
         when(reportRepository.findByUserIdAndPeriod(userId, period)).thenReturn(Optional.of(existingReport));
         
-        reportCommandService.updateReport(message, "msg-2");
+        reportCommandService.updateReport(command, "msg-2");
         
         ArgumentCaptor<Report> reportCaptor = ArgumentCaptor.forClass(Report.class);
         verify(reportRepository).save(reportCaptor.capture());
@@ -121,8 +118,7 @@ class ReportServiceImplUpdateReportTest {
         String period = "2026-03";
         BigDecimal txAmount = BigDecimal.valueOf(2000);
         
-        TransactionMessage message = new TransactionMessage(
-            3L, userId, TransactionType.INCOME, txAmount, date, "Bonus", null, null, null);
+        RecordTransactionCommand command = new RecordTransactionCommand(userId, "INCOME", txAmount, date);
         
         when(processedMessageRepository.existsById("msg-3")).thenReturn(false);
         when(reportRepository.findByUserIdAndPeriod(userId, period)).thenReturn(Optional.empty());
@@ -139,7 +135,7 @@ class ReportServiceImplUpdateReportTest {
         // Mock getOrCreateReport behavior (it saves the empty report first!)
         when(reportRepository.save(any(Report.class))).thenReturn(newlyCreated);
         
-        reportCommandService.updateReport(message, "msg-3");
+        reportCommandService.updateReport(command, "msg-3");
         
         // It calls save twice actually: once in createNewReport, once at the end of updateReport
         ArgumentCaptor<Report> reportCaptor = ArgumentCaptor.forClass(Report.class);
@@ -159,12 +155,11 @@ class ReportServiceImplUpdateReportTest {
         LocalDate date = LocalDate.of(2026, 2, 15);
         BigDecimal txAmount = BigDecimal.valueOf(500);
         
-        TransactionMessage message = new TransactionMessage(
-            1L, userId, TransactionType.INCOME, txAmount, date, "Salary", null, null, null);
+        RecordTransactionCommand command = new RecordTransactionCommand(userId, "INCOME", txAmount, date);
 
         when(processedMessageRepository.existsById("msg-dup")).thenReturn(true);
 
-        reportCommandService.updateReport(message, "msg-dup");
+        reportCommandService.updateReport(command, "msg-dup");
 
         verify(reportRepository, never()).findByUserIdAndPeriod(any(), any());
         verify(reportRepository, never()).save(any());

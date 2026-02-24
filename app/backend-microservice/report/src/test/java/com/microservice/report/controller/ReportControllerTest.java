@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.HttpHeaders;
 
 import java.security.Principal;
 
@@ -33,6 +34,8 @@ class ReportControllerTest {
 
     @Mock
     private ReportQueryService reportQueryService;
+
+    private final String mockToken = "Bearer mock-jwt";
 
     @InjectMocks
     private ReportController reportController;
@@ -59,7 +62,8 @@ class ReportControllerTest {
 
         // WHEN & THEN: Se espera 204 No Content
         mockMvc.perform(delete("/api/v1/reports/{period}", period)
-                .principal(mockPrincipal))
+                .principal(mockPrincipal)
+                .header(HttpHeaders.AUTHORIZATION, mockToken))
                 .andExpect(status().isNoContent());
 
         // THEN: Verificar que se llame al servicio

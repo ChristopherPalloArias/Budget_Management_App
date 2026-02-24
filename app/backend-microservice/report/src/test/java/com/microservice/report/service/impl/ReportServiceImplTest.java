@@ -58,6 +58,8 @@ class ReportServiceImplTest {
     @Mock
     private ReportRepository reportRepository;
 
+    private final String mockToken = "Bearer mock-token";
+
     @Mock
     private TransactionClient transactionClient;
 
@@ -110,7 +112,7 @@ class ReportServiceImplTest {
                 .thenReturn(updatedReport);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response, "ReportResponse no debe ser null");
@@ -158,7 +160,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithoutTransactions);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -192,7 +194,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert)
         assertThrows(
                 ReportNotFoundException.class,
-                () -> reportCommandService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period, mockToken),
                 "Debe lanzar ReportNotFoundException cuando el reporte no existe"
         );
 
@@ -230,8 +232,8 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithConsistentData);
 
         // When (Act) - Recalcular dos veces
-        ReportResponse response1 = reportCommandService.recalculateReport(userId, period);
-        ReportResponse response2 = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
+        ReportResponse response2 = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert) - Ambas respuestas deben ser idénticas
         assertNotNull(response1);
@@ -286,7 +288,7 @@ class ReportServiceImplTest {
                 .thenReturn(expectedSavedReport);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -314,7 +316,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportCommandService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period, mockToken),
                 "Debe lanzar IllegalArgumentException cuando userId es null"
         );
 
@@ -341,7 +343,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportCommandService.recalculateReport(userId, invalidPeriod),
+                () -> reportCommandService.recalculateReport(userId, invalidPeriod, mockToken),
                 "Debe lanzar IllegalArgumentException para período inválido"
         );
 
@@ -360,7 +362,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportCommandService.recalculateReport(userId, malformedPeriod),
+                () -> reportCommandService.recalculateReport(userId, malformedPeriod, mockToken),
                 "Debe lanzar IllegalArgumentException para período malformado"
         );
 
@@ -379,7 +381,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportCommandService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period, mockToken),
                 "Debe lanzar IllegalArgumentException cuando period es null"
         );
 
@@ -425,7 +427,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithZeros);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -474,7 +476,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithLargeAmounts);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -532,7 +534,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithManyTransactions);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -576,9 +578,9 @@ class ReportServiceImplTest {
                 .thenReturn(consistentReport);
 
         // When (Act) - Recalcular 3 veces
-        ReportResponse response1 = reportCommandService.recalculateReport(userId, period);
-        ReportResponse response2 = reportCommandService.recalculateReport(userId, period);
-        ReportResponse response3 = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
+        ReportResponse response2 = reportCommandService.recalculateReport(userId, period, mockToken);
+        ReportResponse response3 = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert) - Las 3 respuestas deben ser idénticas
         assertNotNull(response1);
@@ -633,12 +635,12 @@ class ReportServiceImplTest {
         // Primera llamada debe fallar
         assertThrows(
                 RuntimeException.class,
-                () -> reportCommandService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period, mockToken),
                 "Primera llamada debe fallar con RuntimeException"
         );
 
         // Segunda llamada debe tener éxito
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -677,7 +679,7 @@ class ReportServiceImplTest {
                 .thenReturn(oldReport);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);
@@ -712,7 +714,7 @@ class ReportServiceImplTest {
                 .thenReturn(futureReport);
 
         // When (Act)
-        ReportResponse response = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
         // Then (Assert)
         assertNotNull(response);

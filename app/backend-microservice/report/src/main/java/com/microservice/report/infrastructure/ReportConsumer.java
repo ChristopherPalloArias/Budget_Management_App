@@ -1,6 +1,7 @@
 package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.dto.RecordTransactionCommand;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
 import com.microservice.report.service.ReportCommandService;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,7 @@ public class ReportConsumer {
         // Fallback to transactionId if messageId is not provided by producer
         String finalMessageId = messageId != null ? messageId : "CREATED-" + transactionMessage.transactionId();
         
-        reportCommandService.updateReport(transactionMessage, finalMessageId);
+        reportCommandService.updateReport(toCommand(transactionMessage), finalMessageId);
         log.info("Successfully created transaction ID: {}", transactionMessage.transactionId());
     }
 
@@ -144,8 +145,17 @@ public class ReportConsumer {
         for (TransactionMessage operation : transactionUpdateMapper.toUpdateOperations(transactionMessage)) {
             // For updates, we generate a synthetic message ID to process the revert and apply operations idempotently
             String syntheticId = "UPDATED-" + transactionMessage.transactionId() + "-" + i++;
-            reportCommandService.updateReport(operation, syntheticId);
+            reportCommandService.updateReport(toCommand(operation), syntheticId);
         }
+    }
+
+    private RecordTransactionCommand toCommand(TransactionMessage message) {
+        return new RecordTransactionCommand(
+                message.userId(),
+                message.type().name(),
+                message.amount(),
+                message.date()
+        );
     }
 
     private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
