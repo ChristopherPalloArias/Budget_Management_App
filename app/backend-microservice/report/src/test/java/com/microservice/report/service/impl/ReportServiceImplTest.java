@@ -4,10 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.web.client.RestTemplate;
+import com.microservice.report.service.TransactionClient;
+import com.microservice.report.repository.ProcessedMessageRepository;
 import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.exception.ReportNotFoundException;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
@@ -15,7 +17,7 @@ import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.mapper.ReportMapper;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
-import com.microservice.report.service.ReportService;
+import com.microservice.report.service.ReportCommandService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -57,14 +59,16 @@ class ReportServiceImplTest {
     private ReportRepository reportRepository;
 
     @Mock
-    private RestTemplate restTemplate;
+    private TransactionClient transactionClient;
 
-    private ReportService reportService;
+    @Mock
+    private ProcessedMessageRepository processedMessageRepository;
+
+    @InjectMocks
+    private ReportCommandServiceImpl reportCommandService;
 
     @BeforeEach
     void setUp() {
-        // Crear instancia del servicio con mocks
-        reportService = new ReportServiceImpl(reportRepository, restTemplate);
     }
 
     // ==========================================
@@ -106,7 +110,7 @@ class ReportServiceImplTest {
                 .thenReturn(updatedReport);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response, "ReportResponse no debe ser null");
@@ -154,7 +158,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithoutTransactions);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -188,7 +192,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert)
         assertThrows(
                 ReportNotFoundException.class,
-                () -> reportService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period),
                 "Debe lanzar ReportNotFoundException cuando el reporte no existe"
         );
 
@@ -226,8 +230,8 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithConsistentData);
 
         // When (Act) - Recalcular dos veces
-        ReportResponse response1 = reportService.recalculateReport(userId, period);
-        ReportResponse response2 = reportService.recalculateReport(userId, period);
+        ReportResponse response1 = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response2 = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert) - Ambas respuestas deben ser idénticas
         assertNotNull(response1);
@@ -265,15 +269,24 @@ class ReportServiceImplTest {
                 .balance(BigDecimal.valueOf(-700))       // Balance negativo: 500 - 1200
                 .build();
 
+        Report expectedSavedReport = Report.builder()
+                .reportId(4L)
+                .userId(userId)
+                .period(period)
+                .totalIncome(BigDecimal.valueOf(500))
+                .totalExpense(BigDecimal.valueOf(1200))
+                .balance(BigDecimal.valueOf(-700))
+                .build();
+
         // Mock
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(reportWithNegativeBalance));
 
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithNegativeBalance);
+                .thenReturn(expectedSavedReport);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -301,7 +314,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period),
                 "Debe lanzar IllegalArgumentException cuando userId es null"
         );
 
@@ -328,7 +341,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportService.recalculateReport(userId, invalidPeriod),
+                () -> reportCommandService.recalculateReport(userId, invalidPeriod),
                 "Debe lanzar IllegalArgumentException para período inválido"
         );
 
@@ -347,7 +360,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportService.recalculateReport(userId, malformedPeriod),
+                () -> reportCommandService.recalculateReport(userId, malformedPeriod),
                 "Debe lanzar IllegalArgumentException para período malformado"
         );
 
@@ -366,7 +379,7 @@ class ReportServiceImplTest {
         // When & Then (Act & Assert) - Validation throws IllegalArgumentException before repository call
         assertThrows(
                 IllegalArgumentException.class,
-                () -> reportService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period),
                 "Debe lanzar IllegalArgumentException cuando period es null"
         );
 
@@ -412,7 +425,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithZeros);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -461,7 +474,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithLargeAmounts);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -519,7 +532,7 @@ class ReportServiceImplTest {
                 .thenReturn(reportWithManyTransactions);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -563,9 +576,9 @@ class ReportServiceImplTest {
                 .thenReturn(consistentReport);
 
         // When (Act) - Recalcular 3 veces
-        ReportResponse response1 = reportService.recalculateReport(userId, period);
-        ReportResponse response2 = reportService.recalculateReport(userId, period);
-        ReportResponse response3 = reportService.recalculateReport(userId, period);
+        ReportResponse response1 = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response2 = reportCommandService.recalculateReport(userId, period);
+        ReportResponse response3 = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert) - Las 3 respuestas deben ser idénticas
         assertNotNull(response1);
@@ -620,12 +633,12 @@ class ReportServiceImplTest {
         // Primera llamada debe fallar
         assertThrows(
                 RuntimeException.class,
-                () -> reportService.recalculateReport(userId, period),
+                () -> reportCommandService.recalculateReport(userId, period),
                 "Primera llamada debe fallar con RuntimeException"
         );
 
         // Segunda llamada debe tener éxito
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -664,7 +677,7 @@ class ReportServiceImplTest {
                 .thenReturn(oldReport);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);
@@ -699,7 +712,7 @@ class ReportServiceImplTest {
                 .thenReturn(futureReport);
 
         // When (Act)
-        ReportResponse response = reportService.recalculateReport(userId, period);
+        ReportResponse response = reportCommandService.recalculateReport(userId, period);
 
         // Then (Assert)
         assertNotNull(response);

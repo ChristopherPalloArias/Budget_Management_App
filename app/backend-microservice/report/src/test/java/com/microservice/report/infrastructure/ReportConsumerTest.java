@@ -4,7 +4,7 @@ import com.microservice.report.infrastructure.dto.TransactionMessage;
 import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
 import com.microservice.report.repository.ReportRepository;
-import com.microservice.report.service.ReportService;
+import com.microservice.report.service.ReportCommandService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +25,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class ReportConsumerTest {
@@ -33,12 +35,12 @@ class ReportConsumerTest {
     private ReportRepository reportRepository;
 
     @Mock
-    private ReportService reportService;
+    private ReportCommandService reportCommandService;
 
     @Test
     @DisplayName("should recalculate totals when transaction amount is updated")
     void shouldRecalculateTotals_whenTransactionUpdated() {
-        ReportConsumer consumer = new ReportConsumer(reportService, new TransactionUpdateMapper());
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
 
         TransactionMessage updatedMessage = new TransactionMessage(
                 10L,
@@ -55,8 +57,8 @@ class ReportConsumerTest {
         consumer.consumeUpdated(updatedMessage);
 
         ArgumentCaptor<TransactionMessage> messageCaptor = ArgumentCaptor.forClass(TransactionMessage.class);
-        InOrder inOrder = inOrder(reportService);
-        inOrder.verify(reportService, times(2)).updateReport(messageCaptor.capture());
+        InOrder inOrder = inOrder(reportCommandService);
+        inOrder.verify(reportCommandService, times(2)).updateReport(messageCaptor.capture(), anyString());
 
         TransactionMessage reversal = messageCaptor.getAllValues().get(0);
         TransactionMessage applied = messageCaptor.getAllValues().get(1);
@@ -76,7 +78,7 @@ class ReportConsumerTest {
     @Test
     @DisplayName("should move amounts between periods when transaction date changes")
     void shouldMoveAmountsBetweenPeriods_whenPeriodChanges() {
-        ReportConsumer consumer = new ReportConsumer(reportService, new TransactionUpdateMapper());
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
 
         TransactionMessage updatedMessage = new TransactionMessage(
                 20L,
@@ -93,8 +95,8 @@ class ReportConsumerTest {
         consumer.consumeUpdated(updatedMessage);
 
         ArgumentCaptor<TransactionMessage> messageCaptor = ArgumentCaptor.forClass(TransactionMessage.class);
-        InOrder inOrder = inOrder(reportService);
-        inOrder.verify(reportService, times(2)).updateReport(messageCaptor.capture());
+        InOrder inOrder = inOrder(reportCommandService);
+        inOrder.verify(reportCommandService, times(2)).updateReport(messageCaptor.capture(), anyString());
 
         TransactionMessage reversal = messageCaptor.getAllValues().get(0);
         TransactionMessage applied = messageCaptor.getAllValues().get(1);
@@ -114,7 +116,7 @@ class ReportConsumerTest {
     @Test
     @DisplayName("should send to DLQ after retries when event is invalid")
     void shouldSendToDLQ_whenEventIsInvalid() {
-        ReportConsumer consumer = new ReportConsumer(reportService, new TransactionUpdateMapper());
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
         TransactionMessage invalidMessage = new TransactionMessage(
                 99L,
                 "user-999",
@@ -128,12 +130,12 @@ class ReportConsumerTest {
         );
 
         doThrow(new IllegalArgumentException("invalid message"))
-                .when(reportService)
-                .updateReport(any(TransactionMessage.class));
+                .when(reportCommandService)
+                .updateReport(any(TransactionMessage.class), anyString());
 
         assertDoesNotThrow(() -> consumer.consumeUpdated(invalidMessage),
                 "Consumer should handle retries and route invalid messages to the DLQ");
-        verify(reportService, times(3)).updateReport(invalidMessage);
+        verify(reportCommandService, times(3)).updateReport(eq(invalidMessage), anyString());
         verifyNoInteractions(reportRepository);
     }
 }
