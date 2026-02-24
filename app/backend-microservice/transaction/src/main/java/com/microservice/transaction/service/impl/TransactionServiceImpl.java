@@ -10,9 +10,12 @@ import com.microservice.transaction.exception.NotFoundException;
 import com.microservice.transaction.exception.ValidationException;
 import com.microservice.transaction.service.port.TransactionEventPublisherPort;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.microservice.transaction.model.Transaction;
 import com.microservice.transaction.repository.TransactionRepository;
@@ -43,23 +46,48 @@ import java.math.BigDecimal;
  *   </li>
  * </ol>
  *
+ * <h3>Transaccionalidad y Publicación de Eventos</h3>
+ * <p>El método {@code create()} está anotado con {@code @Transactional} para garantizar
+ * consistencia de datos entre el almacenamiento de la transacción y la publicación del evento.
+ * Si {@code eventPublisher.publishCreated()} falla con una excepción en tiempo de ejecución,
+ * la transacción completa (incluyendo el {@code save()}) se revierte automáticamente.</p>
+ * 
+ * <p><strong>Nota:</strong> Esta implementación asume que RabbitMQ está disponible y la 
+ * publicación es relativamente rápida. Para garantizar consistencia eventual en caso de 
+ * fallos prolongados de RabbitMQ, considerar implementar el Patrón Outbox en futuras mejoras.</p>
+ *
  * @see TransactionService
  * @see JwtAuthenticationFilter
  */
 @RequiredArgsConstructor
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+    
     private final TransactionRepository transactionRepository;
     private final TransactionEventPublisherPort eventPublisher;
 
     @Override
+    @Transactional
     public TransactionResponse create(String userId, TransactionRequest dto) {
         validateAmount(dto.amount());
         
         Transaction entity = TransactionMapper.toRequest(userId, dto);
         
         Transaction saved = transactionRepository.save(entity);
-        eventPublisher.publishCreated(saved);
+        
+        // Publicar evento. Si falla, la transacción se revierte automáticamente por @Transactional.
+        // No capturamos la excepción para permitir que se propague y active el rollback.
+        try {
+            eventPublisher.publishCreated(saved);
+        } catch (RuntimeException ex) {
+            // Logging defensivo: registrar el error de publicación para debugging.
+            // La excepción se propaga para que Spring revierte la transacción.
+            logger.error("Failed to publish transaction creation event for transaction ID: {} (userId: {}). " +
+                    "Database transaction will be rolled back.", saved.getId(), userId, ex);
+            throw ex;
+        }
+        
         return TransactionMapper.toResponse(saved);
     }
 
@@ -176,4 +204,33 @@ public class TransactionServiceImpl implements TransactionService {
         transactionRepository.delete(existing);
         eventPublisher.publishDeleted(existing);
     }
+
+    /**
+     * TODO (Future Enhancement): Implement Outbox Pattern for Event Publishing
+     * 
+     * <p>Current Limitation:</p>
+     * The current implementation ensures transactional consistency through @Transactional,
+     * but only as long as RabbitMQ is available and responsive. If RabbitMQ is down,
+     * the entire create() operation fails and rolls back, potentially causing poor user experience.
+     * 
+     * <p>Outbox Pattern Solution:</p>
+     * Create an OutboxEvent table in the database and:
+     * 1. Store the domain event in OutboxEvent table within the same @Transactional boundary
+     * 2. Use a separate background job/scheduler to:
+     *    - Poll OutboxEvent table for unpublished events
+     *    - Publish events to RabbitMQ
+     *    - Mark events as published
+     *    - Retry with exponential backoff on failures
+     * 
+     * <p>Benefits:</p>
+     * - Decouples database transaction from RabbitMQ availability
+     * - Guarantees eventual consistency (all events are eventually published)
+     * - Improves resilience to temporary RabbitMQ downtime
+     * - Better user experience (create succeeds even if RabbitMQ is momentarily down)
+     * 
+     * <p>References:</p>
+     * - Event Sourcing and CQRS patterns
+     * - Spring Framework: SubscribableChannel, MessageHandler
+     * - Temporal coupling vs eventual consistency
+     */
 }
