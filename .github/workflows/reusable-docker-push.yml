@@ -44,5 +44,5 @@ jobs:
           file: ${{ inputs.dockerfile_path }}
           push: true
           tags: |
-            majoymajo/${{ inputs.service_name }}:${{ inputs.image_tag }}
-            majoymajo/${{ inputs.service_name }}:latest
+            eliancondor/${{ inputs.service_name }}:${{ inputs.image_tag }}
+            eliancondor/${{ inputs.service_name }}:latest
