@@ -32,16 +32,3 @@ jobs:
         with:
           name: transaction-surefire-reports
           path: app/backend-microservice/transaction/target/surefire-reports/
-
-  build-push:
-    needs: unit-tests
-    if: success()
-    uses: ./.github/workflows/reusable-docker-push.yml
-    with:
-      service_name: budget-transaction
-      dockerfile_path: app/backend-microservice/transaction/Dockerfile
-      build_context: app/backend-microservice/transaction
-      image_tag: ${{ github.sha }}
-    secrets:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
