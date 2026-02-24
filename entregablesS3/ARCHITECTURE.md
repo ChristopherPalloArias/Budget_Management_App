@@ -5,6 +5,29 @@
 
 ---
 
+## 0. Architectural Evolution: From Monolith to Microservices
+
+The original "Brownfield monolith" was a single deployable unit that shared a unified database and exhibited tight coupling between its various modules. This structure, while simpler to deploy initially, presented significant challenges at scale.
+
+In the context of this Budget Management App, the monolithic approach suffered from several concrete pain points:
+1. **Coupled deployments:** Changing transaction validation logic required a full redeployment of the complex reporting logic.
+2. **Resource contention:** Heavy report generation tasks consumed significant CPU and memory, impacting the responsiveness and availability of transaction creation APIs.
+3. **Database locking:** High-concurrency transaction inserts could lock tables or rows, slowing down complex report aggregation queries sharing the same database.
+4. **Synchronous latency:** Synchronously calculating reports or balances during a transaction creation process significantly increased the response time for users.
+5. **Lack of fault tolerance:** A runtime failure (like an OutOfMemoryError) during report generation would crash the entire application, breaking the transaction ingestion capabilities as well.
+
+The current **Event-driven microservices architecture** addresses these issues by:
+- Separating deployments into two independent microservices (`transaction` and `report`), allowing independent iteration and release cycles.
+- Isolating resources so heavy reporting compute doesn't steal CPU/RAM from the transaction ingest APIs.
+- Splitting the database (database-per-service), removing database-level read/write locking conflicts entirely.
+- Decoupling operations with asynchronous messaging (RabbitMQ), ensuring transaction APIs return `201 Created` immediately while reports recalculate in the background.
+- Improving fault resilience; if the Report service goes down, the Transaction service continues accepting data, and events are queued safely in RabbitMQ until recovery.
+
+**Theoretical Comparison with Clean Architecture (Ports & Adapters):**
+If we applied Clean Architecture to the current services, the core domain logic would be entirely isolated from infrastructure concerns (e.g., Spring Web, Spring Data JPA, RabbitMQ). The controllers, repositories, and message publishers/consumers would become external adapters implementing domain-defined interfaces (ports). Currently, the services use a classic layered approach where the domain directly depends on infrastructure artifacts (e.g., JPA entities, Spring annotations). Clean Architecture would enforce the Dependency Rule (dependencies point inwards), making the services framework-agnostic and easier to unit-test at the core domain level, albeit introducing more mapping overhead between entities and domain models.
+
+---
+
 ## 1. Architectural Decisions
 
 ### 1.1 Architecture Style
@@ -938,71 +961,41 @@ The Transaction service restricts CORS methods to GET/POST/OPTIONS, which is con
 
 ## Appendix A: Event Flow Diagram
 
-```
-┌────────────┐     POST /api/v1/transactions     ┌──────────────────────┐
-│   Client   │ ──────────────────────────────────→│ TransactionController│
-└────────────┘                                    └──────────┬───────────┘
-                                                             │
-                                                             ▼
-                                                  ┌──────────────────────┐
-                                                  │TransactionServiceImpl│
-                                                  │  1. save(entity)     │
-                                                  │  2. publish(event)   │
-                                                  └──────────┬───────────┘
-                                                             │ Spring @Async
-                                                             ▼
-                                                  ┌──────────────────────┐
-                                                  │TransactionEventList. │
-                                                  │  → sendCreated()     │
-                                                  └──────────┬───────────┘
-                                                             │ RabbitMQ
-                                                             ▼
-                                              ┌─────────────────────────────┐
-                                              │  Exchange: transaction-exch │
-                                              │  Key: transaction.created   │
-                                              └──────────────┬──────────────┘
-                                                             │
-                                                             ▼
-                                                  ┌──────────────────────┐
-                                                  │   ReportConsumer     │
-                                                  │  → consumeCreated()  │
-                                                  └──────────┬───────────┘
-                                                             │
-                                                             ▼
-                                                  ┌──────────────────────┐
-                                                  │  ReportServiceImpl   │
-                                                  │  1. get/create report│
-                                                  │  2. accumulate amount│
-                                                  │  3. recalc balance   │
-                                                  │  4. save(report)     │
-                                                  └──────────────────────┘
+```mermaid
+sequenceDiagram
+    participant Client
+    participant TransactionController
+    participant TransactionServiceImpl
+    participant TransactionEventPublisher
+    participant RabbitMQ as RabbitMQ (transaction-exch)
+    participant ReportConsumer
+    participant ReportServiceImpl
+
+    Client->>TransactionController: POST /api/v1/transactions
+    TransactionController->>TransactionServiceImpl: 1. save(entity)<br/>2. publish(event)
+    TransactionServiceImpl->>TransactionEventPublisher: sendCreated() (Spring @Async)
+    TransactionEventPublisher->>RabbitMQ: publish (Key: transaction.created)
+    RabbitMQ->>ReportConsumer: consumeCreated()
+    ReportConsumer->>ReportServiceImpl: 1. get/create report<br/>2. accumulate amount<br/>3. recalc balance<br/>4. save(report)
 ```
 
 ## Appendix B: Infrastructure Topology
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Docker Compose Network                │
-│                   (finance-network)                     │
-│                                                         │
-│  ┌──────────────┐   ┌──────────────┐   ┌────────────┐  │
-│  │  transaction  │   │    report    │   │  frontend   │  │
-│  │  :8081        │   │   :8082      │   │   :3000     │  │
-│  └──────┬───────┘   └──────┬───────┘   └────────────┘  │
-│         │                  │                            │
-│         ▼                  ▼                            │
-│  ┌──────────────┐   ┌──────────────┐                   │
-│  │    MySQL      │   │    MySQL     │                   │
-│  │transactions_db│   │  reports_db  │                   │
-│  │  :3307→3306   │   │  :3308→3306  │                   │
-│  └──────────────┘   └──────────────┘                   │
-│                                                         │
-│         ┌──────────────────────┐                        │
-│         │     RabbitMQ         │                        │
-│         │  :5672 (AMQP)       │                        │
-│         │  :15672 (Management)│                        │
-│         └──────────────────────┘                        │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph finance-network[Docker Compose Network]
+        transaction[transaction<br/>:8081]
+        report[report<br/>:8082]
+        frontend[frontend<br/>:3000]
+        
+        db_transaction[(MySQL<br/>transactions_db<br/>:3307→3306)]
+        db_report[(MySQL<br/>reports_db<br/>:3308→3306)]
+        
+        rabbitmq(((RabbitMQ<br/>:5672 AMQP<br/>:15672 Management)))
+        
+        transaction --> db_transaction
+        report --> db_report
+    end
 ```
 
 ## Appendix C: Technology Stack
@@ -1019,3 +1012,23 @@ The Transaction service restricts CORS methods to GET/POST/OPTIONS, which is con
 | Build Tool | Maven | — |
 | Containerization | Docker + Docker Compose | — |
 | Frontend Auth | Firebase Authentication | — |
+
+## 8. Compliance Summary
+
+| ID | Severity | Status | Owner |
+|---|---|---|---|
+| F-01 | Medium | Open | ARCH |
+| F-02 | Medium | Open | DEV |
+| F-03 | High | Open | ARCH |
+| F-04 | High | Open | DEV |
+| F-05 | Medium | Open | DEV |
+| F-06 | Low | Open | ARCH |
+| F-07 | Low | Open | DEV |
+| F-08 | Medium | Open | DEV |
+| F-09 | Medium | Open | DEV |
+| F-10 | Low | Open | DEV |
+| F-11 | Low | Open | DEV |
+| F-12 | Low | Open | ARCH |
+| F-13 | Low | Open | DEV |
+
+The API maturity assessment reveals a transitionary system with functional baseline capabilities but lacking robust security, validation, and fully idempotent operations. Addressing the identified high and medium severity findings will be crucial before considering the services production-ready and fully REST-compliant.
