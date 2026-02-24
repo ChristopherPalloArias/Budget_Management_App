@@ -80,17 +80,20 @@ if (typeof Element !== "undefined") {
   Element.prototype.releasePointerCapture = function () { };
 }
 
-// Mock import.meta.env for Vite
-(global as any).import = {
-  meta: {
-    env: {
-      VITE_API_AUTH_URL: 'http://localhost:8081/api/v1/auth',
-      VITE_API_TRANSACTIONS_URL: 'http://localhost:8082/api/v1/transactions',
-      VITE_API_REPORTS_URL: 'http://localhost:8083/api/v1/reports',
-      MODE: 'test',
-      DEV: true,
-      PROD: false,
-      SSR: false,
-    },
+// Mock HttpClient globally to prevent import.meta syntax errors in Jest
+jest.mock("@/core/api/HttpClient", () => ({
+  __esModule: true,
+  default: {
+    getInstance: jest.fn().mockReturnValue({
+      get: jest.fn().mockResolvedValue({ data: {} }),
+      post: jest.fn().mockResolvedValue({ data: {} }),
+      put: jest.fn().mockResolvedValue({ data: {} }),
+      delete: jest.fn().mockResolvedValue({ data: {} }),
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() },
+      },
+    }),
+    clearInstances: jest.fn(),
   },
-};
+}));
