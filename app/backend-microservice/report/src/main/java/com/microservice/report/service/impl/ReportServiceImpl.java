@@ -311,31 +311,37 @@ public class ReportServiceImpl implements ReportService {
     /**
      * Elimina un reporte financiero para un usuario y período específico.
      *
-     * <p>Este método valida la existencia del reporte antes de eliminarlo.
-     * Si el reporte no pertenece al usuario o no existe para el periodo,
-     * lanza {@link ReportNotFoundException}.</p>
+     * <p>Este método implementa idempotencia según RFC 9110 §9.3.5.
+     * Si el reporte no existe, el método completa silenciosamente sin lanzar excepción.
+     * Esto asegura que múltiples solicitudes DELETE al mismo recurso devuelvan 204 NO CONTENT.</p>
      *
      * @param userId identificador del usuario
      * @param period período mensual (yyyy-MM)
-     * @throws ReportNotFoundException si el reporte no existe
      */
     @Transactional
     @Override
     public void deleteReport(String userId, String period) {
-        Report report = findReportOrThrow(userId, period);
-        reportRepository.delete(report);
+        validateUserId(userId);
+        validatePeriod(period);
+        // Buscar y eliminar si existe; si no existe, completar silenciosamente (idempotencia)
+        reportRepository.findByUserIdAndPeriod(userId, period)
+                .ifPresent(reportRepository::delete);
     }
 
     /**
      * Elimina un reporte financiero por su ID.
      *
-     * <p>Este método valida que el reporte exista y pertenezca al usuario
-     * antes de eliminarlo. Si el reporte no existe o no pertenece al usuario,
-     * lanza {@link ReportNotFoundException}.</p>
+     * <p>Este método implementa idempotencia según RFC 9110 §9.3.5.
+     * Si el reporte no existe o no pertenece al usuario, el método completa 
+     * silenciosamente sin lanzar excepción. Esto asegura que múltiples solicitudes 
+     * DELETE al mismo ID devuelvan 204 NO CONTENT.</p>
+     *
+     * <p><strong>Validación de propiedad:</strong> Si el reporte existe pero pertenece
+     * a otro usuario, se ignora silenciosamente para mantener seguridad (no revelar
+     * existencia de reportes de otros usuarios).</p>
      *
      * @param userId identificador del usuario propietario del reporte
      * @param reportId identificador único del reporte
-     * @throws ReportNotFoundException si el reporte no existe o no pertenece al usuario
      * @throws IllegalArgumentException si userId o reportId son inválidos
      */
     @Transactional
@@ -346,16 +352,11 @@ public class ReportServiceImpl implements ReportService {
             throw new IllegalArgumentException("reportId must be a positive number");
         }
 
-        Report report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new ReportNotFoundException(
-                        String.format("Report not found with id: %d", reportId)));
-
-        if (!report.getUserId().equals(userId)) {
-            throw new ReportNotFoundException(
-                    String.format("Report with id %d does not belong to user %s", reportId, userId));
-        }
-
-        reportRepository.delete(report);
+        // Buscar y eliminar si existe y pertenece al usuario; si no existe o no pertenece,
+        // completar silenciosamente (idempotencia + seguridad)
+        reportRepository.findById(reportId)
+                .filter(report -> report.getUserId().equals(userId))
+                .ifPresent(reportRepository::delete);
     }
 
     /**
