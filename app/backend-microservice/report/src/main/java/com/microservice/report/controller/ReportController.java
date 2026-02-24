@@ -35,35 +35,47 @@ public class ReportController {
     private final ReportService reportService;
 
     /**
-     * Obtiene un reporte financiero para el usuario autenticado en un periodo específico.
+     * Obtiene reportes financieros del usuario autenticado.
+     *
+     * <p><strong>Comportamiento condicional:</strong></p>
+     * <ul>
+     *   <li>Si se proporciona `period` (yyyy-MM): retorna un único {@link ReportResponse}</li>
+     *   <li>Si `period` NO se proporciona: retorna una colección paginada {@link PaginatedResponse}</li>
+     * </ul>
+     *
+     * <p><strong>Ejemplos:</strong></p>
+     * <ul>
+     *   <li><code>GET /api/v1/reports?period=2026-02</code> → ReportResponse (single)</li>
+     *   <li><code>GET /api/v1/reports</code> → PaginatedResponse (collection)</li>
+     *   <li><code>GET /api/v1/reports?page=0&size=20</code> → PaginatedResponse (custom pagination)</li>
+     * </ul>
      *
      * @param principal Usuario autenticado (inyectado por Spring Security)
-     * @param period Periodo mensual (yyyy-MM), opcional
-     * @return El reporte solicitado
+     * @param period Período mensual (yyyy-MM), OPCIONAL. Si presente, retorna single report.
+     * @param pageable Parámetros de paginación, usado solo si `period` NO se proporciona.
+     *                 Defecto: size=10, page=0, sort=period DESC
+     * @return {@link ReportResponse} si `period` es provided; 
+     *         {@link PaginatedResponse} si `period` es absent
      */
     @GetMapping
-    public ResponseEntity<ReportResponse> getReport(
+    public ResponseEntity<?> getReports(
             Principal principal,
-            @RequestParam(required = false) @ValidPeriod String period) {
-        String userId = principal.getName();
-        ReportResponse report = reportService.getReport(userId, period);
-        return ResponseEntity.ok(report);
-    }
-
-    /**
-     * Lista todos los reportes del usuario autenticado con paginación.
-     *
-     * @param principal Usuario autenticado
-     * @param pageable Parámetros de paginación
-     * @return Respuesta paginada con los reportes en orden descendente por período
-     */
-    @GetMapping("/all")
-    public ResponseEntity<PaginatedResponse<ReportResponse>> getReportsByUser(
-            Principal principal,
+            @RequestParam(required = false) @ValidPeriod String period,
             @PageableDefault(size = 10, page = 0, sort = "period", direction = Sort.Direction.DESC) Pageable pageable) {
+        
         String userId = principal.getName();
-        Pageable safePageable = PaginationUtils.ensureSafePageSize(pageable);
-        return ResponseEntity.ok(reportService.getReportsByUserId(userId, safePageable));
+        
+        // Conditional routing: period presence determines response type
+        if (period != null && !period.isBlank()) {
+            // Single resource: return single ReportResponse
+            ReportResponse report = reportService.getReport(userId, period);
+            return ResponseEntity.ok(report);
+        } else {
+            // Collection: return paginated ReportResponse collection
+            Pageable safePageable = PaginationUtils.ensureSafePageSize(pageable);
+            PaginatedResponse<ReportResponse> reports = reportService.getReportsByUserId(userId, safePageable);
+            return ResponseEntity.ok(reports);
+        }
     }
 
     /**
