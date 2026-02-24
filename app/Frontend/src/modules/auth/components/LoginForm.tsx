@@ -85,7 +85,7 @@ export const LoginForm = () => {
               <span>Iniciando sesión...</span>
             </div>
           ) : (
-            'Entrar a la plataforma'
+            'Iniciar Sesión'
           )}
         </Button>
       </form>
