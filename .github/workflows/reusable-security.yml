@@ -68,8 +68,8 @@ jobs:
       - name: SonarCloud Analysis
         run: >
           mvn -B -DskipTests sonar:sonar
-          -Dsonar.projectKey=majoymajo_Budget_Management_App
-          -Dsonar.organization=majoymajo
+          -Dsonar.projectKey=ChristopherPalloArias_Budget_Management_App
+          -Dsonar.organization=ChristopherPalloArias
           -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           -f ${{ inputs.backend-dir }}/pom.xml
@@ -83,8 +83,8 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=majoymajo_Budget_Management_App
-            -Dsonar.organization=majoymajo
+            -Dsonar.projectKey=ChristopherPalloArias_Budget_Management_App
+            -Dsonar.organization=ChristopherPalloArias
             -Dsonar.sources=${{ inputs.frontend-dir }}
             -Dsonar.javascript.lcov.reportPaths=${{ inputs.frontend-dir }}/coverage/lcov.info
             -Dsonar.exclusions=${{ inputs.frontend-dir }}/node_modules/**,${{ inputs.frontend-dir }}/dist/**

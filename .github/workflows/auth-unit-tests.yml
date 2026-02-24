@@ -22,8 +22,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run unit tests
-        run: mvn test --no-transfer-progress
+      - name: Run unit tests y Verificar Cobertura (70%)
+        run: mvn test jacoco:report jacoco:check --no-transfer-progress
         working-directory: app/backend-microservice/auth
 
       - name: Upload Surefire test reports
