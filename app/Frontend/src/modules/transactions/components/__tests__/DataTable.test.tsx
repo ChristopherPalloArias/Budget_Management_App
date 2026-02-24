@@ -27,16 +27,17 @@ jest.mock("@/core/constants/categories.constants", () => ({
   getCategoryLabel: jest.fn((category: string) => category),
 }));
 
+const mockOpenCreateModal = jest.fn();
+
 jest.mock("../TransactionModalsProvider", () => ({
-  useTransactionModals: jest.fn(() => ({
-    openCreateModal: jest.fn(),
+  useTransactionModals: () => ({
+    openCreateModal: mockOpenCreateModal,
     openEditModal: jest.fn(),
     openDeleteModal: jest.fn(),
-  })),
+  }),
 }));
 
 import { useDataTableLogic } from "@/shared/hooks/useDataTableLogic";
-import { useTransactionModals } from "../TransactionModalsProvider";
 
 const mockUseDataTableLogic = useDataTableLogic as jest.MockedFunction<
   typeof useDataTableLogic
@@ -349,7 +350,7 @@ describe("DataTable", () => {
       });
       await user.click(createButton);
 
-      expect(useTransactionModals().openCreateModal).toHaveBeenCalledTimes(1);
+      expect(mockOpenCreateModal).toHaveBeenCalledTimes(1);
     });
   });
 

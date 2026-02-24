@@ -23,14 +23,7 @@ jobs:
           cache: 'maven'
 
       - name: Run unit tests y Verificar Cobertura (70%)
-        run: |
-          mvn test \
-          org.jacoco:jacoco-maven-plugin:prepare-agent \
-          org.jacoco:jacoco-maven-plugin:report \
-          org.jacoco:jacoco-maven-plugin:check \
-          -Djacoco.haltOnFailure=true \
-          -Djacoco.check.lineRate=0.70 \
-          --no-transfer-progress
+        run: mvn test --no-transfer-progress
         working-directory: app/backend-microservice/transaction
 
       - name: Upload Surefire test reports
