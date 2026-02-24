@@ -375,9 +375,11 @@ public class ReportServiceImpl implements ReportService {
     @Transactional
     @Override
     public ReportResponse recalculateReport(String userId, String period) {
+        validateUserId(userId);
+        validatePeriod(period);
         // 1. Obtener el reporte o crearlo si no existe (con valores en cero)
         Report report = reportRepository.findByUserIdAndPeriod(userId, period)
-                .orElseGet(() -> createNewReport(userId, period));
+                .orElseThrow(() -> new ReportNotFoundException(userId, period));
         
         // 2. Consultar transacciones del microservicio (usando comunicación inter-service)
         String jwt = getJwtFromContext();
@@ -438,8 +440,8 @@ public class ReportServiceImpl implements ReportService {
     }
 
     // DTOs auxiliares para el consumo del microservicio de transacciones
-    private record PaginatedTransactionResponse(List<TransactionData> content) {}
-    private record TransactionData(String type, BigDecimal amount) {}
+    record PaginatedTransactionResponse(List<TransactionData> content) {}
+    record TransactionData(String type, BigDecimal amount) {}
 
     /**
      * Busca un reporte por usuario y período, lanzando excepción si no existe.

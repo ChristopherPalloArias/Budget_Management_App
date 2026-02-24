@@ -22,12 +22,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
+import java.security.Principal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,8 +70,12 @@ class TransactionControllerTest {
         when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
                 .thenReturn(response);
 
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("user-123");
+
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .principal(principal)
                         .content("{"
                                 + "\"type\":\"EXPENSE\","
                                 + "\"amount\":150.00,"
@@ -93,8 +96,12 @@ class TransactionControllerTest {
         when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
                 .thenThrow(new NotFoundException("Transaction not found"));
 
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("user-123");
+
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .principal(principal)
                         .content("{"
                                 + "\"type\":\"EXPENSE\","
                                 + "\"amount\":150.00,"

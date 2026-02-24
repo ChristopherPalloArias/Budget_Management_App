@@ -1,0 +1,7 @@
+region         = "us-east-1"
+vpc_cidr       = "10.0.0.0/16"
+ami_id         = "ami-12345678"
+instance_type  = "t2.micro"
+db_name        = "exampledb"
+db_username    = "admin"
+db_password    = "examplepassword"

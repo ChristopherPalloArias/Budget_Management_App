@@ -5,6 +5,7 @@ FROM eclipse-temurin:17.0.10_7-jdk-alpine AS build
 # Set working directory
 WORKDIR /app
 
+# End of Dockerfile
 
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd pom.xml ./
