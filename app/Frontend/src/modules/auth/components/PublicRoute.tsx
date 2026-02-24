@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useUserStore } from '../store/useUserStore.ts';
+import { useUserStore } from '../store/useUserStore';
 
 interface PublicRouteProps {
     children?: React.ReactNode;

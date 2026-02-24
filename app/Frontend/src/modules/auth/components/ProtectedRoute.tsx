@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStatus } from '../hooks/useAuthStatus.ts';
+import { useAuthStatus } from '../hooks/useAuthStatus';
 
 interface ProtectedRouteProps {
     children?: React.ReactNode;
