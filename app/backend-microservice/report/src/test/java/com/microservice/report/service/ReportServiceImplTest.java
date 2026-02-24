@@ -63,18 +63,19 @@ class ReportServiceImplTest {
     }
 
     @Test
-    @DisplayName("US-017-E4: Lanzar ReportNotFoundException cuando el reporte no existe")
-    void deleteReport_WhenReportDoesNotExist_ShouldThrowException() {
+    @DisplayName("US-017-E4: RFC 9110 Idempotencia - No lanzar excepción cuando el reporte no existe")
+    void deleteReport_WhenReportDoesNotExist_ShouldCompleteSuccessfully() {
         // GIVEN: El reporte no existe en la base de datos
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.empty());
 
-        // WHEN & THEN: Se espera que lance ReportNotFoundException
-        assertThrows(ReportNotFoundException.class, () -> {
+        // WHEN: Se ejecuta la eliminación (debe completar sin lanzar excepción)
+        assertDoesNotThrow(() -> {
             reportService.deleteReport(userId, period);
         });
 
-        // Validar que NO se intentó eliminar nada
+        // THEN: Se validó que se buscó pero NO se intentó eliminar nada
+        verify(reportRepository, times(1)).findByUserIdAndPeriod(userId, period);
         verify(reportRepository, never()).delete(any(Report.class));
     }
 }
