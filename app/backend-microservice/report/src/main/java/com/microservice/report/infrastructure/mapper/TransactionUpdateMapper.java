@@ -1,6 +1,6 @@
 package com.microservice.report.infrastructure.mapper;
 
-import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.domain.TransactionEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -8,27 +8,28 @@ import java.util.List;
 @Component
 public class TransactionUpdateMapper {
 
-    public List<TransactionMessage> toUpdateOperations(TransactionMessage message) {
-        if (!hasPreviousValues(message)) {
-            return List.of(message);
+    public List<TransactionEvent> toUpdateOperations(TransactionEvent event) {
+        if (!hasPreviousValues(event)) {
+            return List.of(event);
         }
 
-        TransactionMessage reversal = new TransactionMessage(
-                message.transactionId(),
-                message.userId(),
-                message.type(),
-                message.previousAmount().negate(),
-                message.previousDate(),
-                message.category(),
-                message.description(),
+        TransactionEvent reversal = new TransactionEvent(
+                event.messageId(),
+                event.transactionId(),
+                event.userId(),
+                event.type(),
+                event.previousAmount().negate(),
+                event.previousDate(),
+                event.category(),
+                event.description(),
                 null,
                 null
         );
 
-        return List.of(reversal, message);
+        return List.of(reversal, event);
     }
 
-    private boolean hasPreviousValues(TransactionMessage message) {
-        return message.previousAmount() != null && message.previousDate() != null;
+    private boolean hasPreviousValues(TransactionEvent event) {
+        return event.previousAmount() != null && event.previousDate() != null;
     }
 }

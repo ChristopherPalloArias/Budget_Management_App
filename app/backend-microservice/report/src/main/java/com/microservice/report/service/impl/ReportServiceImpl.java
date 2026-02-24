@@ -14,12 +14,12 @@ import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
 import com.microservice.report.mapper.ReportMapper;
 import com.microservice.report.exception.ReportNotFoundException;
-import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.domain.TransactionEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.microservice.report.infrastructure.dto.TransactionType;
+import com.microservice.report.domain.TransactionType;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
 import com.microservice.report.service.ReportService;
@@ -70,7 +70,7 @@ import jakarta.servlet.http.HttpServletRequest;
  *   <li><strong>DT-DOC-02:</strong> No hay mecanismo de idempotencia — si un mismo
  *       mensaje se procesa dos veces, los totales se acumulan incorrectamente.</li>
  *   <li><strong>DT-DOC-03:</strong> El contrato {@link ReportService} importa
- *       {@code TransactionMessage} del paquete {@code infrastructure.dto}, acoplando
+     *       {@code TransactionEvent} del paquete {@code domain}, acoplando
  *       la interfaz del servicio al DTO de infraestructura en lugar de un Port del dominio.</li>
  * </ul>
  *
@@ -99,14 +99,14 @@ public class ReportServiceImpl implements ReportService {
      * INSERT antes de retornar. Esto asegura que el reporte tenga un ID asignado
      * para la posterior actualización en {@link #updateReport}.</p>
      *
-     * @param transactionMessage mensaje de transacción consumido desde RabbitMQ,
+     * @param transactionEvent evento de transacción consumido desde RabbitMQ,
      *                           del cual se extraen {@code userId} y {@code date}
      * @return la entidad {@link Report} existente o recién creada, nunca {@code null}
      */
-    private Report getOrCreateReport(TransactionMessage transactionMessage) {
-        validateTransactionMessage(transactionMessage);
-        String userId = transactionMessage.userId();
-        String period = extractPeriodFromDate(transactionMessage.date());
+    private Report getOrCreateReport(TransactionEvent transactionEvent) {
+        validateTransactionEvent(transactionEvent);
+        String userId = transactionEvent.userId();
+        String period = extractPeriodFromDate(transactionEvent.date());
         return reportRepository.findByUserIdAndPeriod(userId, period)
                 .orElseGet(() -> createNewReport(userId, period));
     }
@@ -143,7 +143,7 @@ public class ReportServiceImpl implements ReportService {
      * Actualiza el reporte financiero mensual acumulando el monto de una transacción.
      *
      * <p>Este es el método central de la cadena Event-Driven. Es invocado por
-     * {@link ReportConsumer} cada vez que un mensaje {@link TransactionMessage}
+     * {@link ReportConsumer} cada vez que un mensaje {@link TransactionEvent}
      * llega a la cola de RabbitMQ.</p>
      *
      * <h4>Flujo de ejecución:</h4>
@@ -164,16 +164,16 @@ public class ReportServiceImpl implements ReportService {
      * se acumularán incorrectamente. Considerar agregar un registro de {@code transactionId}
      * procesados para lograr idempotencia.</p>
      *
-     * @param transactionMessage mensaje deserializado desde la cola de RabbitMQ
-     *                           con los datos de la transacción creada
+     * @param transactionEvent evento deserializado desde la cola de RabbitMQ
+     *                         con los datos de la transacción creada
      */
     @Transactional
     @Override
-    public void updateReport(TransactionMessage transactionMessage) {
-        Report report = getOrCreateReport(transactionMessage);
-        BigDecimal amount = transactionMessage.amount();
+    public void updateReport(TransactionEvent transactionEvent) {
+        Report report = getOrCreateReport(transactionEvent);
+        BigDecimal amount = transactionEvent.amount();
         
-        accumulateTransactionAmount(report, transactionMessage.type(), amount);
+        accumulateTransactionAmount(report, transactionEvent.type(), amount);
         recalculateBalance(report);
         
         reportRepository.save(report);
@@ -488,13 +488,13 @@ public class ReportServiceImpl implements ReportService {
     /**
      * Valida el mensaje de transacción para evitar NPE en el flujo event-driven.
      *
-     * @param transactionMessage mensaje recibido desde mensajería
+     * @param transactionEvent evento recibido desde mensajería
      */
-    private void validateTransactionMessage(TransactionMessage transactionMessage) {
-        Objects.requireNonNull(transactionMessage, "transactionMessage cannot be null");
-        validateUserId(transactionMessage.userId());
-        Objects.requireNonNull(transactionMessage.date(), "transactionMessage.date cannot be null");
-        Objects.requireNonNull(transactionMessage.amount(), "transactionMessage.amount cannot be null");
-        Objects.requireNonNull(transactionMessage.type(), "transactionMessage.type cannot be null");
+    private void validateTransactionEvent(TransactionEvent transactionEvent) {
+        Objects.requireNonNull(transactionEvent, "transactionEvent cannot be null");
+        validateUserId(transactionEvent.userId());
+        Objects.requireNonNull(transactionEvent.date(), "transactionEvent.date cannot be null");
+        Objects.requireNonNull(transactionEvent.amount(), "transactionEvent.amount cannot be null");
+        Objects.requireNonNull(transactionEvent.type(), "transactionEvent.type cannot be null");
     }
 }

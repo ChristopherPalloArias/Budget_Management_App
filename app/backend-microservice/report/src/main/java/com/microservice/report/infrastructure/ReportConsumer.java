@@ -2,6 +2,8 @@ package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
+import com.microservice.report.domain.TransactionEvent;
+import com.microservice.report.domain.TransactionType;
 import com.microservice.report.service.IdempotencyService;
 import com.microservice.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +67,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>El monto no se acumula múltiples veces en los reportes.</li>
  *   <li>El sistema es resiliente a fallos sin afectar la consistencia de datos.</li>
  * </ul>
- * <p>La verificación ocurre en {@link IdempotencyService#isFirstTimeProcessing(TransactionMessage, String)},
+ * <p>La verificación ocurre en {@link IdempotencyService#isFirstTimeProcessing(TransactionEvent, String)},
  * que registra el {@code messageId} en la tabla {@code processed_messages} de forma transaccional.</p>
  *
  * @see ReportService           Servicio de negocio que procesa las transacciones
@@ -106,15 +108,17 @@ public class ReportConsumer {
     public void consumeCreated(TransactionMessage transactionMessage) {
         log.info("Processing Created transaction ID: {}, messageId: {}", 
                 transactionMessage.transactionId(), transactionMessage.messageId());
+
+        TransactionEvent transactionEvent = toTransactionEvent(transactionMessage);
         
         // Verificar idempotencia: si es un duplicado, descartarlo silenciosamente
-        if (!idempotencyService.isFirstTimeProcessing(transactionMessage, "transaction.created")) {
+        if (!idempotencyService.isFirstTimeProcessing(transactionEvent, "transaction.created")) {
             log.info("Discarding duplicate message for transaction ID: {}, messageId: {}",
                     transactionMessage.transactionId(), transactionMessage.messageId());
             return;
         }
         
-        reportService.updateReport(transactionMessage);
+        reportService.updateReport(transactionEvent);
         log.info("Successfully created transaction ID: {}", transactionMessage.transactionId());
     }
 
@@ -145,41 +149,57 @@ public class ReportConsumer {
     public void consumeUpdated(TransactionMessage transactionMessage) {
         log.info("Processing Updated transaction ID: {}, messageId: {}", 
                 transactionMessage.transactionId(), transactionMessage.messageId());
+
+        TransactionEvent transactionEvent = toTransactionEvent(transactionMessage);
         
         // Verificar idempotencia: si es un duplicado, descartarlo silenciosamente
-        if (!idempotencyService.isFirstTimeProcessing(transactionMessage, "transaction.updated")) {
+        if (!idempotencyService.isFirstTimeProcessing(transactionEvent, "transaction.updated")) {
             log.info("Discarding duplicate message for transaction ID: {}, messageId: {}",
                     transactionMessage.transactionId(), transactionMessage.messageId());
             return;
         }
         
-        handleWithRetry(transactionMessage);
+        handleWithRetry(transactionEvent);
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
 
-    private void handleWithRetry(TransactionMessage transactionMessage) {
+    private void handleWithRetry(TransactionEvent transactionEvent) {
         int attempts = 0;
         while (attempts < MAX_RETRIES) {
             try {
-                processUpdated(transactionMessage);
+                processUpdated(transactionEvent);
                 return;
             } catch (RuntimeException ex) {
                 attempts++;
                 if (attempts >= MAX_RETRIES) {
-                    sendToDlq(transactionMessage, ex);
+                    sendToDlq(transactionEvent, ex);
                 }
             }
         }
     }
 
-    private void processUpdated(TransactionMessage transactionMessage) {
-        for (TransactionMessage operation : transactionUpdateMapper.toUpdateOperations(transactionMessage)) {
+    private void processUpdated(TransactionEvent transactionEvent) {
+        for (TransactionEvent operation : transactionUpdateMapper.toUpdateOperations(transactionEvent)) {
             reportService.updateReport(operation);
         }
     }
 
-    private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
+    private void sendToDlq(TransactionEvent transactionEvent, Exception ex) {
         log.error("Sending message to DLQ after retries. transactionId={}, reason={}",
-                transactionMessage.transactionId(), ex.getMessage());
+                transactionEvent.transactionId(), ex.getMessage());
+    }
+
+    private TransactionEvent toTransactionEvent(TransactionMessage transactionMessage) {
+        return new TransactionEvent(
+                transactionMessage.messageId(),
+                transactionMessage.transactionId(),
+                transactionMessage.userId(),
+                TransactionType.valueOf(transactionMessage.type().name()),
+                transactionMessage.amount(),
+                transactionMessage.date(),
+                transactionMessage.category(),
+                transactionMessage.description(),
+                transactionMessage.previousAmount(),
+                transactionMessage.previousDate());
     }
 }

@@ -1,7 +1,8 @@
 package com.microservice.report.infrastructure;
 
+import com.microservice.report.domain.TransactionEvent;
+import com.microservice.report.domain.TransactionType;
 import com.microservice.report.infrastructure.dto.TransactionMessage;
-import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
 import com.microservice.report.service.IdempotencyService;
 import com.microservice.report.service.ReportService;
@@ -47,21 +48,25 @@ class ReportConsumerTest {
     private ReportConsumer reportConsumer;
 
     private TransactionMessage testMessage;
+    private TransactionEvent testEvent;
     private String messageId;
 
     @BeforeEach
     void setUp() {
         messageId = UUID.randomUUID().toString();
-        testMessage = TransactionMessage.builder()
-                .messageId(messageId)
-                .transactionId(100L)
-                .userId("user-123")
-                .type(TransactionType.INCOME)
-                .amount(BigDecimal.valueOf(1000))
-                .category("Salary")
-                .date(LocalDate.of(2026, 2, 24))
-                .description("Monthly salary")
-                .build();
+        testMessage = new TransactionMessage(
+                messageId,
+                100L,
+                "user-123",
+                com.microservice.report.infrastructure.dto.TransactionType.INCOME,
+                BigDecimal.valueOf(1000),
+                LocalDate.of(2026, 2, 24),
+                "Salary",
+                "Monthly salary",
+                null,
+                null
+        );
+        testEvent = toEvent(testMessage);
     }
 
     @Nested
@@ -72,22 +77,22 @@ class ReportConsumerTest {
         @DisplayName("Should process created message and update report when first time")
         void consumeCreated_WhenNewMessage_ShouldUpdateReport() {
             // Given: message is new (not duplicate)
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(true);
 
             // When
             reportConsumer.consumeCreated(testMessage);
 
             // Then
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.created");
-            verify(reportService).updateReport(testMessage);
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.created");
+            verify(reportService).updateReport(testEvent);
         }
 
         @Test
         @DisplayName("Should verify idempotency before processing")
         void consumeCreated_ShouldCheckIdempotencyFirst() {
             // Given
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(true);
 
             // When
@@ -95,8 +100,8 @@ class ReportConsumerTest {
 
             // Then: idempotency check should happen before service call
             InOrder inOrder = inOrder(idempotencyService, reportService);
-            inOrder.verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.created");
-            inOrder.verify(reportService).updateReport(testMessage);
+            inOrder.verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.created");
+            inOrder.verify(reportService).updateReport(testEvent);
         }
     }
 
@@ -108,7 +113,7 @@ class ReportConsumerTest {
         @DisplayName("Should discard duplicate message without updating report")
         void consumeCreated_WhenDuplicate_ShouldNotUpdateReport() {
             // Given: message is duplicate
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(false);
 
             // When
@@ -122,14 +127,14 @@ class ReportConsumerTest {
         @DisplayName("Should return early when duplicate detected")
         void consumeCreated_WhenDuplicate_ShouldReturnEarly() {
             // Given
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(false);
 
             // When
             reportConsumer.consumeCreated(testMessage);
 
             // Then: verify idempotency was checked
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.created");
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.created");
             // But reportService was never called
             verifyNoInteractions(reportService);
         }
@@ -143,31 +148,31 @@ class ReportConsumerTest {
         @DisplayName("Should process updated message when first time")
         void consumeUpdated_WhenNewMessage_ShouldProcess() {
             // Given: message is new
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.updated"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.updated"))
                     .thenReturn(true);
-            when(transactionUpdateMapper.toUpdateOperations(testMessage))
-                    .thenReturn(java.util.List.of(testMessage));
+            when(transactionUpdateMapper.toUpdateOperations(testEvent))
+                    .thenReturn(java.util.List.of(testEvent));
 
             // When
             reportConsumer.consumeUpdated(testMessage);
 
             // Then
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.updated");
-            verify(transactionUpdateMapper).toUpdateOperations(testMessage);
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.updated");
+            verify(transactionUpdateMapper).toUpdateOperations(testEvent);
         }
 
         @Test
         @DisplayName("Should discard duplicate updated message")
         void consumeUpdated_WhenDuplicate_ShouldNotProcess() {
             // Given: message is duplicate
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.updated"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.updated"))
                     .thenReturn(false);
 
             // When
             reportConsumer.consumeUpdated(testMessage);
 
             // Then
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.updated");
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.updated");
             verify(transactionUpdateMapper, never()).toUpdateOperations(any());
             verify(reportService, never()).updateReport(any());
         }
@@ -182,20 +187,20 @@ class ReportConsumerTest {
         void scenario_RabbitMQRedelivery_ShouldOnlyProcessOnce() {
             // Scenario: RabbitMQ redelivers the same message due to consumer crash/timeout
             // First delivery: processed
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(true);
 
             reportConsumer.consumeCreated(testMessage);
-            verify(reportService, times(1)).updateReport(testMessage);
+            verify(reportService, times(1)).updateReport(testEvent);
 
             // Second delivery: detected as duplicate
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(false);
 
             reportConsumer.consumeCreated(testMessage);
             
             // Then: reportService called only once (first delivery)
-            verify(reportService, times(1)).updateReport(testMessage);
+            verify(reportService, times(1)).updateReport(testEvent);
         }
 
         @Test
@@ -203,34 +208,38 @@ class ReportConsumerTest {
         void scenario_MultipleRedeliveries_ShouldNotDuplicateAmount() {
             // Scenario: Message redelivered 3 times
             String sameMessageId = UUID.randomUUID().toString();
-            TransactionMessage msg = TransactionMessage.builder()
-                    .messageId(sameMessageId)
-                    .transactionId(200L)
-                    .userId("user-456")
-                    .type(TransactionType.EXPENSE)
-                    .amount(BigDecimal.valueOf(500))
-                    .category("Food")
-                    .date(LocalDate.of(2026, 2, 24))
-                    .build();
+            TransactionMessage msg = new TransactionMessage(
+                    sameMessageId,
+                    200L,
+                    "user-456",
+                    com.microservice.report.infrastructure.dto.TransactionType.EXPENSE,
+                    BigDecimal.valueOf(500),
+                    LocalDate.of(2026, 2, 24),
+                    "Food",
+                    null,
+                    null,
+                    null
+            );
+            TransactionEvent msgEvent = toEvent(msg);
 
             // First delivery: success
-            when(idempotencyService.isFirstTimeProcessing(msg, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(msgEvent, "transaction.created"))
                     .thenReturn(true);
             reportConsumer.consumeCreated(msg);
 
             // Second redelivery: duplicate
-            when(idempotencyService.isFirstTimeProcessing(msg, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(msgEvent, "transaction.created"))
                     .thenReturn(false);
             reportConsumer.consumeCreated(msg);
 
             // Third redelivery: duplicate
-            when(idempotencyService.isFirstTimeProcessing(msg, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(msgEvent, "transaction.created"))
                     .thenReturn(false);
             reportConsumer.consumeCreated(msg);
 
             // Then: reportService called only once
             // Amount 500 accumulated once, not 3 times (1500)
-            verify(reportService, times(1)).updateReport(msg);
+            verify(reportService, times(1)).updateReport(msgEvent);
         }
     }
 
@@ -242,21 +251,21 @@ class ReportConsumerTest {
         @DisplayName("Should register created event type correctly")
         void consumeCreated_ShouldRegisterCorrectEventType() {
             // Given
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.created"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.created"))
                     .thenReturn(true);
 
             // When
             reportConsumer.consumeCreated(testMessage);
 
             // Then: verify "transaction.created" event type is used
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.created");
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.created");
         }
 
         @Test
         @DisplayName("Should register updated event type correctly")
         void consumeUpdated_ShouldRegisterCorrectEventType() {
             // Given
-            when(idempotencyService.isFirstTimeProcessing(testMessage, "transaction.updated"))
+            when(idempotencyService.isFirstTimeProcessing(testEvent, "transaction.updated"))
                     .thenReturn(true);
             when(transactionUpdateMapper.toUpdateOperations(testMessage))
                     .thenReturn(java.util.List.of());
@@ -265,7 +274,22 @@ class ReportConsumerTest {
             reportConsumer.consumeUpdated(testMessage);
 
             // Then: verify "transaction.updated" event type is used
-            verify(idempotencyService).isFirstTimeProcessing(testMessage, "transaction.updated");
+            verify(idempotencyService).isFirstTimeProcessing(testEvent, "transaction.updated");
         }
+    }
+
+    private TransactionEvent toEvent(TransactionMessage message) {
+        return new TransactionEvent(
+                message.messageId(),
+                message.transactionId(),
+                message.userId(),
+                TransactionType.valueOf(message.type().name()),
+                message.amount(),
+                message.date(),
+                message.category(),
+                message.description(),
+                message.previousAmount(),
+                message.previousDate()
+        );
     }
 }

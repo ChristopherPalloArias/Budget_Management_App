@@ -1,6 +1,6 @@
 package com.microservice.report.service;
 
-import com.microservice.report.infrastructure.dto.TransactionMessage;
+import com.microservice.report.domain.TransactionEvent;
 import com.microservice.report.model.ProcessedMessage;
 import com.microservice.report.repository.ProcessedMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,37 +39,37 @@ public class IdempotencyService {
      * misma transacción, permitiendo que la base de datos rechace intentos de
      * inserción duplicada mediante la constraint de unicidad.</p>
      * 
-     * @param transactionMessage mensaje a verificar
+     * @param transactionEvent evento a verificar
      * @param eventType tipo de evento ("transaction.created", "transaction.updated", etc.)
      * @return true si el mensaje es nuevo y debe ser procesado, false si es un duplicado
      */
     @Transactional
-    public boolean isFirstTimeProcessing(TransactionMessage transactionMessage, String eventType) {
+    public boolean isFirstTimeProcessing(TransactionEvent transactionEvent, String eventType) {
         // Verificar si el messageId ya existe
-        if (processedMessageRepository.existsByMessageId(transactionMessage.messageId())) {
+        if (processedMessageRepository.existsByMessageId(transactionEvent.messageId())) {
             log.warn("Duplicate message detected. messageId={}, eventType={}, transactionId={}. " +
                     "Message will be discarded to maintain idempotence.",
-                    transactionMessage.messageId(), eventType, transactionMessage.transactionId());
+                    transactionEvent.messageId(), eventType, transactionEvent.transactionId());
             return false;
         }
         
         // Registrar el messageId como procesado
         ProcessedMessage processedMessage = ProcessedMessage.builder()
-                .messageId(transactionMessage.messageId())
+                .messageId(transactionEvent.messageId())
                 .eventType(eventType)
-                .transactionId(transactionMessage.transactionId())
-                .userId(transactionMessage.userId())
+                .transactionId(transactionEvent.transactionId())
+                .userId(transactionEvent.userId())
                 .build();
         
         try {
             processedMessageRepository.save(processedMessage);
             log.debug("Message registered as processed. messageId={}, eventType={}, transactionId={}",
-                    transactionMessage.messageId(), eventType, transactionMessage.transactionId());
+                    transactionEvent.messageId(), eventType, transactionEvent.transactionId());
             return true;
         } catch (Exception ex) {
             // Si hay error al guardar (ej: constraint violation), asumir que es un duplicado
             log.warn("Error registering processed message (likely duplicate). messageId={}, error={}",
-                    transactionMessage.messageId(), ex.getMessage());
+                    transactionEvent.messageId(), ex.getMessage());
             return false;
         }
     }
