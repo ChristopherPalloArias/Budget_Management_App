@@ -28,6 +28,10 @@ jobs:
           cat app/backend-microservice/auth/target/jacoco.exec || echo "jacoco.exec not found"
         working-directory: app/backend-microservice/auth
 
+      - name: Debug Build Directory
+        run: ls app/backend-microservice/auth
+        working-directory: app/backend-microservice/auth
+
       - name: Run unit tests y Verificar Cobertura (70%)
         run: mvn test jacoco:report jacoco:check --no-transfer-progress
         working-directory: app/backend-microservice/auth
