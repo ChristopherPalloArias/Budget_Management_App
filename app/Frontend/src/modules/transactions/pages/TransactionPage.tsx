@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useTransactionPage } from "../hooks/useTransactionPage";
 import { DataTable } from "../components/DataTable";
 import { TransactionForm } from "../components/TransactionForm";
+import { DeleteTransactionDialog } from "../components/DeleteTransactionDialog";
 
 export function TransactionPage() {
   const {
@@ -19,13 +20,17 @@ export function TransactionPage() {
     fetchError,
     isCreating,
     isEditing,
+    isDeletingTransaction,
     operationError,
     openCreateDialog,
     closeCreateDialog,
     openEditDialog,
     closeEditDialog,
+    openDeleteDialog,
+    closeDeleteDialog,
     handleCreateTransaction,
     handleEditTransaction,
+    handleConfirmDelete,
   } = useTransactionPage();
 
   const editDefaultValues = state.selectedTransaction
@@ -62,8 +67,11 @@ export function TransactionPage() {
         data={transactions}
         onCreateTransaction={openCreateDialog}
         onEditTransaction={openEditDialog}
+        onDeleteTransaction={openDeleteDialog}
+        isDeletingTransaction={isDeletingTransaction}
       />
 
+      {/* Dialog: Crear Transacción */}
       <Dialog open={state.isCreateDialogOpen} onOpenChange={closeCreateDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -76,22 +84,39 @@ export function TransactionPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: Editar Transacción */}
       <Dialog open={state.isEditDialogOpen} onOpenChange={closeEditDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Editar Transacción</DialogTitle>
           </DialogHeader>
-          {editDefaultValues && (
+          {state.transactionToEdit && (
             <TransactionForm
               onSubmit={handleEditTransaction}
               isLoading={isEditing}
-              defaultValues={editDefaultValues}
-              submitLabel="Guardar cambios"
-              loadingLabel="Guardando..."
+              isEditing
+              defaultValues={{
+                description: state.transactionToEdit.description,
+                amount: state.transactionToEdit.amount,
+                category: state.transactionToEdit.category,
+                type: state.transactionToEdit.type,
+                date: state.transactionToEdit.date instanceof Date
+                  ? state.transactionToEdit.date.toISOString().split("T")[0]
+                  : String(state.transactionToEdit.date).split("T")[0],
+              }}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Confirmar Eliminación */}
+      <DeleteTransactionDialog
+        isOpen={!!state.transactionToDelete}
+        onOpenChange={(open) => !open && closeDeleteDialog()}
+        onConfirm={handleConfirmDelete}
+        isPending={isDeletingTransaction}
+        transactionDescription={state.transactionToDelete?.description || ""}
+      />
     </div>
   );
 }
@@ -113,6 +138,7 @@ function TransactionPageSkeleton() {
             <Skeleton className="h-12 flex-1" />
             <Skeleton className="h-12 w-24" />
             <Skeleton className="h-12 w-32" />
+            <Skeleton className="h-12 w-20" />
             <Skeleton className="h-12 w-20" />
           </div>
         ))}

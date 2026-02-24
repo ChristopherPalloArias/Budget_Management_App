@@ -10,12 +10,11 @@ import type { TransactionItemResponse } from "../types/transaction.types";
 const transactionsHttpClient = HttpClient.getInstance("transactions");
 
 export const getTransactionsByUser = async (
-  userId: string,
   period?: string,
 ): Promise<TransactionModel[]> => {
   const endpoint = period
     ? `${API_ENDPOINTS.TRANSACTIONS}?period=${period}`
-    : `${API_ENDPOINTS.TRANSACTIONS}?userId=${userId}`;
+    : API_ENDPOINTS.TRANSACTIONS;
   const response =
     await transactionsHttpClient.get<{ content: TransactionItemResponse[] }>(endpoint);
   return (response.data.content || []).map(transactionAdapter);
@@ -23,11 +22,10 @@ export const getTransactionsByUser = async (
 
 export const createTransaction = async (
   data: TransactionFormData,
-  userId: string,
 ): Promise<TransactionModel> => {
   const response = await transactionsHttpClient.post<TransactionItemResponse>(
     API_ENDPOINTS.TRANSACTIONS,
-    { ...data, userId },
+    data,
   );
   return transactionAdapter(response.data);
 };
@@ -41,4 +39,8 @@ export const updateTransaction = async (
     data,
   );
   return transactionAdapter(response.data);
+};
+
+export const deleteTransaction = async (id: string | number): Promise<void> => {
+  await transactionsHttpClient.delete(`${API_ENDPOINTS.TRANSACTIONS}/${id}`);
 };

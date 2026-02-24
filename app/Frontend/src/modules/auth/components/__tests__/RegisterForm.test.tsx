@@ -9,6 +9,9 @@ import { useNavigate } from "react-router-dom";
 jest.mock("../../services/authService");
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 
 describe("RegisterForm Component", () => {

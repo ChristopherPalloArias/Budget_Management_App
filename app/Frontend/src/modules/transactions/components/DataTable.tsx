@@ -16,12 +16,20 @@ import type { TransactionModel } from "../types/transaction.types";
 interface DataTableProps {
   data: TransactionModel[];
   onCreateTransaction: () => void;
-  onEditTransaction?: (transaction: TransactionModel) => void;
+  onEditTransaction: (transaction: TransactionModel) => void;
+  onDeleteTransaction: (transaction: TransactionModel) => void;
+  isDeletingTransaction?: boolean;
 }
 
 const TRANSACTION_SEARCH_FIELDS: (keyof TransactionModel)[] = ["description"];
 
-export function DataTable({ data, onCreateTransaction, onEditTransaction }: DataTableProps) {
+export function DataTable({
+  data,
+  onCreateTransaction,
+  onEditTransaction,
+  onDeleteTransaction,
+  isDeletingTransaction = false,
+}: DataTableProps) {
   const {
     state,
     paginatedData,
@@ -48,7 +56,7 @@ export function DataTable({ data, onCreateTransaction, onEditTransaction }: Data
   return (
     <div className="space-y-4">
       <TableHeaderSection />
-      
+
       <DataTableToolbar
         searchQuery={state.searchQuery}
         onSearchChange={setSearchQuery}
@@ -78,12 +86,14 @@ export function DataTable({ data, onCreateTransaction, onEditTransaction }: Data
               <TransactionTableRow
                 key={transaction.id}
                 transaction={transaction}
-                onEdit={hasEditAction ? () => onEditTransaction?.(transaction) : undefined}
+                onEdit={onEditTransaction}
+                onDelete={onDeleteTransaction}
+                isDeleting={isDeletingTransaction}
               />
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columnCount} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 {hasFilters ? (
                   <>
                     No se encontraron transacciones con los filtros aplicados.
@@ -109,7 +119,7 @@ export function DataTable({ data, onCreateTransaction, onEditTransaction }: Data
         pageIndex={state.pageIndex}
         totalPages={totalPages}
         totalFiltered={totalFiltered}
-        onPageChange={() => {}}
+        onPageChange={() => { }}
         onPrevPage={prevPage}
         onNextPage={nextPage}
       />

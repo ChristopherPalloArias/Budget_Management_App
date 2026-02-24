@@ -34,11 +34,11 @@ class HttpClient {
   private static getBaseURL(serviceType: ServiceType): string {
     switch (serviceType) {
       case 'transactions':
-        return import.meta.env.VITE_API_TRANSACTIONS_URL;
+        return import.meta.env.VITE_API_TRANSACTIONS_URL || '';
       case 'reports':
-        return import.meta.env.VITE_API_REPORTS_URL;
+        return import.meta.env.VITE_API_REPORTS_URL || '';
       case 'auth':
-        return import.meta.env.VITE_API_AUTH_URL;
+        return import.meta.env.VITE_API_AUTH_URL || '';
       default:
         throw new Error(`Service type '${serviceType}' not supported`);
     }

@@ -15,4 +15,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    'process.env.VITE_API_AUTH_URL': JSON.stringify(process.env.VITE_API_AUTH_URL),
+    'process.env.VITE_API_TRANSACTIONS_URL': JSON.stringify(process.env.VITE_API_TRANSACTIONS_URL),
+    'process.env.VITE_API_REPORTS_URL': JSON.stringify(process.env.VITE_API_REPORTS_URL),
+  }
 })

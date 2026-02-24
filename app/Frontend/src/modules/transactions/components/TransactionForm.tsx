@@ -35,6 +35,7 @@ interface TransactionFormProps {
   defaultValues?: z.infer<typeof transactionFormSchema>;
   submitLabel?: string;
   loadingLabel?: string;
+  isEditing?: boolean;
 }
 
 export function TransactionForm({
@@ -43,6 +44,7 @@ export function TransactionForm({
   defaultValues,
   submitLabel = "Crear Transacción",
   loadingLabel = "Creando...",
+  isEditing = false,
 }: TransactionFormProps) {
   const form = useForm<z.infer<typeof transactionFormSchema>>({
     resolver: zodResolver(transactionFormSchema),
@@ -168,6 +170,10 @@ export function TransactionForm({
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
             {isLoading ? loadingLabel : submitLabel}
+            {isLoading
+              ? (isEditing ? "Actualizando..." : "Creando...")
+              : (isEditing ? "Actualizar Transacción" : "Crear Transacción")
+            }
           </Button>
         </div>
       </form>

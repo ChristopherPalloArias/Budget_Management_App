@@ -79,3 +79,21 @@ if (typeof Element !== "undefined") {
   Element.prototype.setPointerCapture = function () { };
   Element.prototype.releasePointerCapture = function () { };
 }
+
+// Mock HttpClient globally to prevent import.meta syntax errors in Jest
+jest.mock("@/core/api/HttpClient", () => ({
+  __esModule: true,
+  default: {
+    getInstance: jest.fn().mockReturnValue({
+      get: jest.fn().mockResolvedValue({ data: {} }),
+      post: jest.fn().mockResolvedValue({ data: {} }),
+      put: jest.fn().mockResolvedValue({ data: {} }),
+      delete: jest.fn().mockResolvedValue({ data: {} }),
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() },
+      },
+    }),
+    clearInstances: jest.fn(),
+  },
+}));

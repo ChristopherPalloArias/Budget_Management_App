@@ -45,12 +45,12 @@ export const registerWithEmail = async (
 };
 
 /**
- * Logout
+ * Logout — delegates to the store's logout which orchestrates
+ * full cleanup of auth state, Zustand stores, and React Query cache.
  */
 export const logout = async (): Promise<void> => {
     try {
-        await authRepository.signOut();
-        useUserStore.getState().setUser(null);
+        await useUserStore.getState().logout();
         console.log('[Auth Service] Logout successful');
     } catch (error: any) {
         console.error('[Auth Service] Logout error:', error);

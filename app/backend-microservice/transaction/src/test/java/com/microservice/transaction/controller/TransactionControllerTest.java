@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,13 +68,12 @@ class TransactionControllerTest {
                 OffsetDateTime.parse("2025-03-10T10:00:00-05:00")
         );
 
-        when(transactionService.updateTransaction(eq(transactionId), any(TransactionRequest.class)))
+        when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
                 .thenReturn(response);
 
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{"
-                                + "\"userId\":\"user-123\","
                                 + "\"type\":\"EXPENSE\","
                                 + "\"amount\":150.00,"
                                 + "\"category\":\"Alimentacion\","
@@ -82,7 +82,7 @@ class TransactionControllerTest {
                                 + "}"))
                 .andExpect(status().isOk());
 
-        verify(transactionService).updateTransaction(eq(transactionId), any(TransactionRequest.class));
+        verify(transactionService).updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class));
     }
 
     @Test
@@ -90,13 +90,12 @@ class TransactionControllerTest {
     void shouldReturn404_whenTransactionNotFound() throws Exception {
         Long transactionId = 999L;
 
-        when(transactionService.updateTransaction(eq(transactionId), any(TransactionRequest.class)))
+        when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
                 .thenThrow(new NotFoundException("Transaction not found"));
 
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{"
-                                + "\"userId\":\"user-123\","
                                 + "\"type\":\"EXPENSE\","
                                 + "\"amount\":150.00,"
                                 + "\"category\":\"Alimentacion\","
@@ -105,7 +104,7 @@ class TransactionControllerTest {
                                 + "}"))
                 .andExpect(status().isNotFound());
 
-        verify(transactionService).updateTransaction(eq(transactionId), any(TransactionRequest.class));
+        verify(transactionService).updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class));
     }
 
     @Test
@@ -116,7 +115,6 @@ class TransactionControllerTest {
         mockMvc.perform(put("/api/v1/transactions/{id}", transactionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{"
-                                + "\"userId\":\"user-123\","
                                 + "\"type\":\"EXPENSE\","
                                 + "\"amount\":-10.00,"
                                 + "\"category\":\"Alimentacion\","

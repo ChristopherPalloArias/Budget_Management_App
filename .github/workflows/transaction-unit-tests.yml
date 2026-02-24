@@ -1,0 +1,47 @@
+name: Transaction Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - release/**
+    paths:
+      - 'app/backend-microservice/transaction/**'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run unit tests
+        run: mvn test --no-transfer-progress
+        working-directory: app/backend-microservice/transaction
+
+      - name: Upload Surefire test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: transaction-surefire-reports
+          path: app/backend-microservice/transaction/target/surefire-reports/
+
+  build-push:
+    needs: unit-tests
+    if: success()
+    uses: ./.github/workflows/reusable-docker-push.yml
+    with:
+      service_name: budget-transaction
+      dockerfile_path: app/backend-microservice/transaction/Dockerfile
+      build_context: app/backend-microservice/transaction
+      image_tag: ${{ github.sha }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
