@@ -4,6 +4,7 @@ FROM eclipse-temurin:17.0.10_7-jdk-alpine AS build
 # Set working directory
 WORKDIR /app
 
+
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
@@ -45,3 +46,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
+# End of Dockerfile

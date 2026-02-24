@@ -15,3 +15,4 @@ ENV DB_USERNAME="" \
     DB_PASSWORD="" \
     JWT_SECRET=""
 ENTRYPOINT ["java", "-jar", "app.jar"]
+# End of Dockerfile
