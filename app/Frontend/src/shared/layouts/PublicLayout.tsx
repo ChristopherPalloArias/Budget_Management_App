@@ -1,9 +1,13 @@
 import { Outlet } from 'react-router-dom';
+import { ThemeToggle } from './components/ThemeToggle';
 
 export const PublicLayout = () => {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-200 to-green-300">
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white transition-colors duration-300 relative">
+            <header className="absolute top-6 right-6 z-50">
+                <ThemeToggle />
+            </header>
+            <main className="w-full h-full">
                 <Outlet />
             </main>
         </div>
