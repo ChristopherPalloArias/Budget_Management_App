@@ -39,7 +39,7 @@ jobs:
         working-directory: app/backend-microservice/auth
 
       - name: Run unit tests y Verificar Cobertura (70%)
-        run: mvn test --no-transfer-progress
+        run: mvn test jacoco:report jacoco:check --no-transfer-progress
         working-directory: app/backend-microservice/auth
 
       - name: Upload Surefire test reports
