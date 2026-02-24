@@ -6,7 +6,6 @@ import { getCategoryColor, getCategoryLabel } from "@/core/constants/categories.
 import { formatCurrency } from "@/shared/utils/currencyUtils";
 import { formatDate } from "@/lib/date-utils";
 import type { TransactionModel } from "../types/transaction.types";
-import { Pencil } from "lucide-react";
 
 interface TransactionTableRowProps {
   transaction: TransactionModel;
