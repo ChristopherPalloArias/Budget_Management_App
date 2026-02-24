@@ -10,12 +10,12 @@ export function useRecalculateReport() {
   return useMutation({
     mutationFn: (period: string) => {
       if (!user) throw new Error("User not authenticated");
-      return recalculateReport(user.id, period);
+      return recalculateReport(period);
     },
     onSuccess: (data) => {
       // Invalidar la cache de reportes para refrescar los datos
       queryClient.invalidateQueries({ queryKey: ["reports"] });
-      
+
       toast.success("Reporte recalculado exitosamente", {
         description: `Balance actualizado: ${new Intl.NumberFormat("es-CO", {
           style: "currency",
@@ -23,9 +23,10 @@ export function useRecalculateReport() {
         }).format(data.balance)}`,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || "Por favor, intenta de nuevo más tarde.";
       toast.error("Error al recalcular el reporte", {
-        description: error.message || "Por favor, intenta de nuevo más tarde.",
+        description: errorMessage,
       });
     },
   });

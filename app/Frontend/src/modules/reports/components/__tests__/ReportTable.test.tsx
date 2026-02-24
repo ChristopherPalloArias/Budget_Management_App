@@ -3,6 +3,24 @@ import userEvent from "@testing-library/user-event";
 import { ReportTable } from "../ReportTable";
 import type { ReportModel } from "../../types/report.types";
 
+// Mock HttpClient
+jest.mock("@/core/api/HttpClient", () => ({
+  __esModule: true,
+  default: {
+    getInstance: jest.fn().mockReturnValue({
+      get: jest.fn().mockResolvedValue({ data: {} }),
+      post: jest.fn().mockResolvedValue({ data: {} }),
+      put: jest.fn().mockResolvedValue({ data: {} }),
+      delete: jest.fn().mockResolvedValue({ data: {} }),
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() },
+      },
+    }),
+    clearInstances: jest.fn(),
+  },
+}));
+
 const mockReports: ReportModel[] = [
   {
     id: 1,
@@ -38,6 +56,30 @@ const mockReports: ReportModel[] = [
     updatedAt: new Date("2024-04-01"),
   },
 ];
+
+// Mock hooks
+jest.mock("../../hooks/useDownloadReportPdf", () => ({
+  useDownloadReportPdf: () => ({
+    download: jest.fn(),
+    downloadingPeriod: null,
+    isDownloading: false,
+    error: null,
+  }),
+}));
+
+jest.mock("../../hooks/useDeleteReport", () => ({
+  useDeleteReport: () => ({
+    mutate: jest.fn(),
+    isPending: false,
+  }),
+}));
+
+jest.mock("../../hooks/useRecalculateReport", () => ({
+  useRecalculateReport: () => ({
+    mutate: jest.fn(),
+    isPending: false,
+  }),
+}));
 
 describe("ReportTable", () => {
   describe("Estado de carga", () => {

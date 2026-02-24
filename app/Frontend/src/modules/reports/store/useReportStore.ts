@@ -10,19 +10,24 @@ interface ReportState {
     setCurrentReport: (report: ReportModel | null) => void;
     setFilters: (filters: ReportFilters) => void;
     clearReportData: () => void;
+    reset: () => void;
 }
 
 // Obtener rango por defecto del último año
 const defaultFilters = getLastYearRange();
 
+const getInitialState = () => ({
+    currentReport: null as ReportModel | null,
+    filters: {
+        startPeriod: defaultFilters.startPeriod,
+        endPeriod: defaultFilters.endPeriod,
+    } as ReportFilters,
+});
+
 export const useReportStore = create<ReportState>()(
     devtools(
         (set) => ({
-            currentReport: null,
-            filters: {
-                startPeriod: defaultFilters.startPeriod,
-                endPeriod: defaultFilters.endPeriod,
-            },
+            ...getInitialState(),
 
             setCurrentReport: (report) =>
                 set({ currentReport: report }, false, 'setCurrentReport'),
@@ -32,16 +37,17 @@ export const useReportStore = create<ReportState>()(
 
             clearReportData: () =>
                 set(
-                    { 
-                        currentReport: null, 
-                        filters: {
-                            startPeriod: defaultFilters.startPeriod,
-                            endPeriod: defaultFilters.endPeriod,
-                        }
-                    },
+                    getInitialState(),
                     false,
                     'clearReportData'
                 ),
+
+            /**
+             * Resetea el store completo a su estado inicial.
+             * Debe invocarse durante el logout para evitar phantom data.
+             */
+            reset: () =>
+                set(getInitialState(), false, 'reset'),
         }),
         { name: 'Report Store' }
     )

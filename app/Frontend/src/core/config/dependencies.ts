@@ -1,4 +1,4 @@
-import { FirebaseAuthRepository } from '@/infrastructure/auth/FirebaseAuthRepository';
+import { ApiAuthRepository } from '@/infrastructure/auth/ApiAuthRepository';
 import type { IAuthRepository } from '@/core/auth/interfaces/IAuthRepository';
 
-export const authRepository: IAuthRepository = new FirebaseAuthRepository();
+export const authRepository: IAuthRepository = new ApiAuthRepository();

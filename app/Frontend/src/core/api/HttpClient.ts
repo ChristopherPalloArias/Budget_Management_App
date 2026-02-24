@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance, AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
 import { API_TIMEOUT, HTTP_STATUS } from '@/core/constants/app.constants';
 
-export type ServiceType = 'transactions' | 'reports';
+export type ServiceType = 'transactions' | 'reports' | 'auth';
 
 interface HttpClientConfig {
   timeout?: number;
@@ -17,7 +17,7 @@ class HttpClient {
 
     const baseURL = this.getBaseURL(serviceType);
     const timeout = config?.timeout ?? API_TIMEOUT;
-    
+
     const instance: AxiosInstance = axios.create({
       baseURL,
       timeout,
@@ -34,9 +34,11 @@ class HttpClient {
   private static getBaseURL(serviceType: ServiceType): string {
     switch (serviceType) {
       case 'transactions':
-        return import.meta.env.VITE_API_TRANSACTIONS_URL;
+        return import.meta.env.VITE_API_TRANSACTIONS_URL || '';
       case 'reports':
-        return import.meta.env.VITE_API_REPORTS_URL;
+        return import.meta.env.VITE_API_REPORTS_URL || '';
+      case 'auth':
+        return import.meta.env.VITE_API_AUTH_URL || '';
       default:
         throw new Error(`Service type '${serviceType}' not supported`);
     }
@@ -45,6 +47,11 @@ class HttpClient {
   private static setupInterceptors(instance: AxiosInstance, serviceType: ServiceType): void {
     instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        // Attach JWT Bearer token if available (for authenticated requests)
+        const token = localStorage.getItem('auth_token');
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         console.log(`[${serviceType.toUpperCase()}] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       },

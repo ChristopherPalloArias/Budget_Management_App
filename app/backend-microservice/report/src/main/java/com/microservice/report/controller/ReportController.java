@@ -20,8 +20,11 @@ import jakarta.validation.Valid;
 import java.security.Principal;
 
 /**
- * Controlador REST para gestionar los reportes financieros.
- * Proporciona endpoints para recuperar, resumir y eliminar reportes mensuales.
+ * Controlador REST para gestionar reportes financieros.
+ * 
+ * Todos los endpoints requieren autenticación JWT.
+ * El userId se extrae automáticamente del usuario autenticado,
+ * garantizando que cada usuario solo puede ver/modificar sus propios reportes.
  */
 @RequiredArgsConstructor
 @RestController
@@ -32,103 +35,105 @@ public class ReportController {
     private final ReportService reportService;
 
     /**
-     * Obtiene un reporte financiero específico para un usuario y periodo.
+     * Obtiene un reporte financiero para el usuario autenticado en un periodo específico.
      *
-     * @param userId Identificador del usuario
-     * @param period Periodo mensual (yyyy-MM)
+     * @param principal Usuario autenticado (inyectado por Spring Security)
+     * @param period Periodo mensual (yyyy-MM), opcional
      * @return El reporte solicitado
      */
-    @GetMapping("/{userId}")
+    @GetMapping
     public ResponseEntity<ReportResponse> getReport(
-            @PathVariable String userId,
+            Principal principal,
             @RequestParam(required = false) @ValidPeriod String period) {
+        String userId = principal.getName();
         ReportResponse report = reportService.getReport(userId, period);
         return ResponseEntity.ok(report);
     }
 
     /**
-     * Lista todos los reportes de un usuario con paginación.
+     * Lista todos los reportes del usuario autenticado con paginación.
      *
-     * @param userId   Identificador del usuario
+     * @param principal Usuario autenticado
      * @param pageable Parámetros de paginación
-     * @return Respuesta paginada con los reportes
+     * @return Respuesta paginada con los reportes en orden descendente por período
      */
-    @GetMapping("/{userId}/all")
+    @GetMapping("/all")
     public ResponseEntity<PaginatedResponse<ReportResponse>> getReportsByUser(
-            @PathVariable String userId,
+            Principal principal,
             @PageableDefault(size = 10, page = 0, sort = "period", direction = Sort.Direction.DESC) Pageable pageable) {
+        String userId = principal.getName();
         Pageable safePageable = PaginationUtils.ensureSafePageSize(pageable);
         return ResponseEntity.ok(reportService.getReportsByUserId(userId, safePageable));
     }
 
     /**
-     * Genera un resumen financiero basado en un rango de periodos.
+     * Genera un resumen financiero del usuario autenticado basado en un rango de períodos.
+     *
+     * @param principal Usuario autenticado
+     * @param startPeriod Período inicial (yyyy-MM)
+     * @param endPeriod Período final (yyyy-MM)
+     * @return Resumen agregado de ingresos, gastos y balance
      */
-    @GetMapping("/{userId}/summary")
+    @GetMapping("/summary")
     public ResponseEntity<ReportSummary> getReportSummary(
-            @PathVariable String userId,
+            Principal principal,
             @RequestParam @ValidPeriod String startPeriod,
             @RequestParam @ValidPeriod String endPeriod) {
+        String userId = principal.getName();
         ReportSummary summary = reportService.getReportsByPeriodRange(userId, startPeriod, endPeriod);
         return ResponseEntity.ok(summary);
     }
 
     /**
-     * Recalcula el reporte financiero para un usuario y período específico.
+     * Recalcula el reporte financiero para el usuario autenticado en un período específico.
      *
      * <p>Este endpoint procesa una solicitud de recalculación obteniendo todas las
      * transacciones del período y recalculando los totales de ingresos, gastos y balance.</p>
      *
-     * <p><strong>Nota sobre idempotencia:</strong> Este endpoint no es idempotente. 
-     * Si se invoca múltiples veces con los mismos parámetros, puede producir resultados
-     * diferentes si los datos subyacentes han cambiado.</p>
+     * <p><strong>Seguridad:</strong> El userId del usuario autenticado se valida contra
+     * el userId en el request. Si no coinciden, se retorna un error de Acceso Denegado.</p>
      *
-     * @param request DTO con userId y period requeridos
+     * @param principal Usuario autenticado
+     * @param request DTO con el period requerido (userId debe coincidir con el autenticado)
      * @return Respuesta con el reporte recalculado (balance, period)
      */
     @PostMapping("/recalculate")
     public ResponseEntity<ReportResponse> recalculateReport(
+            Principal principal,
             @Valid @RequestBody RecalculateReportRequest request) {
-        ReportResponse response = reportService.recalculateReport(request.getUserId(), request.getPeriod());
+        String userId = principal.getName();
+        ReportResponse response = reportService.recalculateReport(userId, request.getPeriod());
         return ResponseEntity.ok(response);
     }
 
     /**
      * Elimina permanentemente un reporte por su ID para el usuario autenticado.
-     * Acepta solo IDs numéricos (ej: 1, 2, 3).
      *
-     * @param reportId  ID del reporte a eliminar
-     * @param principal Información de autenticación inyectada
+     * @param reportId ID del reporte a eliminar
+     * @param principal Usuario autenticado
      */
     @DeleteMapping("/{reportId:[0-9]+}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteReportById(@PathVariable Long reportId, Principal principal) {
-        String userId = getAuthenticatedUserId(principal);
+    public void deleteReportById(
+            @PathVariable Long reportId,
+            Principal principal) {
+        String userId = principal.getName();
         reportService.deleteReportById(userId, reportId);
     }
 
     /**
      * Elimina permanentemente el reporte de un periodo para el usuario autenticado.
-     * Acepta solo períodos en formato yyyy-MM (ej: 2026-02).
      *
-     * @param period    Periodo a eliminar (yyyy-MM)
-     * @param principal Información de autenticación inyectada
+     * @param period Periodo a eliminar (yyyy-MM)
+     * @param principal Usuario autenticado
      */
     @DeleteMapping("/{period:[0-9]{4}-[0-9]{2}}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteReport(@PathVariable String period, Principal principal) {
-        String userId = getAuthenticatedUserId(principal);
+    public void deleteReport(
+            @PathVariable String period,
+            Principal principal) {
+        String userId = principal.getName();
         reportService.deleteReport(userId, period);
     }
-
-    /**
-     * Extrae el identificador de usuario de forma segura.
-     *
-     * @param principal Identidad del usuario
-     * @return El ID del usuario actual
-     */
-    private String getAuthenticatedUserId(Principal principal) {
-        // En producción se obtiene del Principal. Se mantiene fallback para tests.
-        return (principal != null) ? principal.getName() : "QHlms0DALUgLnnXMffUBMP14v5m1";
-    }
 }
+

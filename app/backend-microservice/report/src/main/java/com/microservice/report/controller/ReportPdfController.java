@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+
 /**
  * Controlador REST para la descarga de reportes en formato PDF.
  *
@@ -32,16 +34,17 @@ public class ReportPdfController {
     /**
      * Descarga el reporte financiero de un período como archivo PDF.
      *
-     * @param userId identificador del usuario
+     * @param principal usuario autenticado (inyectado por Spring Security)
      * @param period período en formato {@code "yyyy-MM"}
      * @return respuesta HTTP con el archivo PDF como {@code application/pdf}
      * @throws ReportNotFoundException si no existe reporte para el usuario y período
      */
-    @GetMapping("/{userId}/pdf")
+    @GetMapping("/pdf")
     public ResponseEntity<byte[]> downloadPdf(
-            @PathVariable String userId,
+            Principal principal,
             @RequestParam @ValidPeriod String period) {
 
+        String userId = principal.getName();
         Report report = reportRepository.findByUserIdAndPeriod(userId, period)
                 .orElseThrow(() -> new ReportNotFoundException(userId, period));
 

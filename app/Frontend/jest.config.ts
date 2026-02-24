@@ -10,12 +10,8 @@ const config: Config = {
 
   // Module paths
   moduleNameMapper: {
-    "^@/core/config/firebase\\.config$":
-      "<rootDir>/src/core/config/__mocks__/firebase.config.ts",
     "^@/core/config/dependencies$":
       "<rootDir>/src/core/config/__mocks__/dependencies.ts",
-    "^firebase/auth$": "<rootDir>/src/test/__mocks__/firebase/auth.ts",
-    "^firebase/app$": "<rootDir>/src/test/__mocks__/firebase/app.ts",
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
     "\\.(jpg|jpeg|png|gif|svg|webp)$":
@@ -41,7 +37,7 @@ const config: Config = {
           jsx: "react-jsx",
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
-          module: "esnext",
+          module: "commonjs",
           moduleResolution: "bundler",
           skipLibCheck: true,
           isolatedModules: true,

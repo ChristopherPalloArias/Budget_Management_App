@@ -11,13 +11,18 @@ interface TransactionState {
   clearTransactionData: () => void;
   addTransaction: (transaction: TransactionModel) => void;
   updateTransaction: (transaction: TransactionModel) => void;
+  reset: () => void;
 }
+
+const getInitialState = () => ({
+  currentTransaction: null as TransactionModel | null,
+  selectedPeriod: new Date().toISOString().slice(0, 7),
+});
 
 export const useTransactionStore = create<TransactionState>()(
   devtools(
     (set) => ({
-      currentTransaction: null,
-      selectedPeriod: new Date().toISOString().slice(0, 7),
+      ...getInitialState(),
 
       setCurrentTransaction: (transaction) =>
         set(
@@ -31,10 +36,7 @@ export const useTransactionStore = create<TransactionState>()(
 
       clearTransactionData: () =>
         set(
-          {
-            currentTransaction: null,
-            selectedPeriod: new Date().toISOString().slice(0, 7),
-          },
+          getInitialState(),
           false,
           "clearTransactionData",
         ),
@@ -44,6 +46,13 @@ export const useTransactionStore = create<TransactionState>()(
 
       updateTransaction: (transaction) =>
         set({ currentTransaction: transaction }, false, "updateTransaction"),
+
+      /**
+       * Resetea el store completo a su estado inicial.
+       * Debe invocarse durante el logout para evitar phantom data.
+       */
+      reset: () =>
+        set(getInitialState(), false, "reset"),
     }),
     { name: "Transaction Store" },
   ),

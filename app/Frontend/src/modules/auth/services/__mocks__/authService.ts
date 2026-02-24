@@ -18,9 +18,6 @@ export const loginWithEmail = jest.fn(
   },
 );
 
-export const loginWithGoogle = jest.fn(async (): Promise<IAuthUser> => {
-  return mockAuthUser;
-});
 
 export const registerWithEmail = jest.fn(
   async (

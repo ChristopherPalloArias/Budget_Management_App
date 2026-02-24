@@ -21,12 +21,6 @@ import jakarta.validation.constraints.NotBlank;
 public class RecalculateReportRequest {
 
     /**
-     * Identificador del usuario propietario del reporte.
-     */
-    @NotBlank(message = "userId cannot be blank")
-    private String userId;
-
-    /**
      * Período mensual en formato yyyy-MM (ejemplo: 2025-11).
      */
     @NotBlank(message = "period cannot be blank")
