@@ -11,6 +11,9 @@ dist/
 build/
 *.local
 
+# Maven build output (compiled classes, test reports, etc.)
+**/target/
+
 # Environment
 .env
 .env.local

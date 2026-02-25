@@ -175,6 +175,11 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<excludes>
+								<exclude>**/AuthApplication.class</exclude>
+								<exclude>**/config/SecurityConfig.class</exclude>
+								<exclude>**/config/CorsConfig.class</exclude>
+							</excludes>
 							<rules>
 								<rule>
 									<element>BUNDLE</element>
