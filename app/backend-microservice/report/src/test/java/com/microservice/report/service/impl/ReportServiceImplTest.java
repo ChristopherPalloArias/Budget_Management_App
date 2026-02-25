@@ -17,14 +17,11 @@ import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.mapper.ReportMapper;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
-import com.microservice.report.service.ReportService;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
 import com.microservice.report.service.ReportCommandService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -74,19 +71,6 @@ class ReportServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        reportService = new ReportServiceImpl(reportRepository, restTemplate);
-    }
-
-    private void mockRestTemplate(List<ReportServiceImpl.TransactionData> data) {
-        ReportServiceImpl.PaginatedTransactionResponse responseBody = new ReportServiceImpl.PaginatedTransactionResponse(data);
-        ResponseEntity<ReportServiceImpl.PaginatedTransactionResponse> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
-
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(responseEntity);
     }
 
     // ==========================================
@@ -126,11 +110,6 @@ class ReportServiceImplTest {
 
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(updatedReport);
-
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(1200)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(200))
-        ));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -179,8 +158,6 @@ class ReportServiceImplTest {
         // Mock: al persistir, retorna el mismo reporte (sin cambios)
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(reportWithoutTransactions);
-
-        mockRestTemplate(Collections.emptyList());
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -254,11 +231,6 @@ class ReportServiceImplTest {
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(reportWithConsistentData);
 
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(2000)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(500))
-        ));
-
         // When (Act) - Recalcular dos veces
         ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
         ReportResponse response2 = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -314,11 +286,6 @@ class ReportServiceImplTest {
 
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(expectedSavedReport);
-
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(500)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(1200))
-        ));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -459,11 +426,6 @@ class ReportServiceImplTest {
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(reportWithZeros);
 
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.ZERO),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.ZERO)
-        ));
-
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
@@ -512,11 +474,6 @@ class ReportServiceImplTest {
 
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(reportWithLargeAmounts);
-
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", new BigDecimal("9999999999.99")),
-                new ReportServiceImpl.TransactionData("EXPENSE", new BigDecimal("5000000000.00"))
-        ));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -576,13 +533,6 @@ class ReportServiceImplTest {
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(reportWithManyTransactions);
 
-        // Actually the mock implementation of mockRestTemplate only allows one list.
-        // Let's manually mock if needed or just use a list with two entries that sum up.
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", expectedIncome),
-                new ReportServiceImpl.TransactionData("EXPENSE", expectedExpense)
-        ));
-
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
@@ -626,11 +576,6 @@ class ReportServiceImplTest {
 
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(consistentReport);
-
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(3000)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(1000))
-        ));
 
         // When (Act) - Recalcular 3 veces
         ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -686,11 +631,6 @@ class ReportServiceImplTest {
                 .thenThrow(new RuntimeException("Database timeout"))  // Primera falla
                 .thenReturn(report);  // Segunda tiene éxito
 
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(1500)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(750))
-        ));
-
         // When & Then (Act & Assert)
         // Primera llamada debe fallar
         assertThrows(
@@ -738,11 +678,6 @@ class ReportServiceImplTest {
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(oldReport);
 
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(100)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(50))
-        ));
-
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
 
@@ -777,11 +712,6 @@ class ReportServiceImplTest {
 
         when(reportRepository.save(any(Report.class)))
                 .thenReturn(futureReport);
-
-        mockRestTemplate(List.of(
-                new ReportServiceImpl.TransactionData("INCOME", BigDecimal.valueOf(5000)),
-                new ReportServiceImpl.TransactionData("EXPENSE", BigDecimal.valueOf(2000))
-        ));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);

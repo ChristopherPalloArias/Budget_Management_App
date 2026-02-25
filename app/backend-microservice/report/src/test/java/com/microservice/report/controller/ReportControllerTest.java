@@ -15,11 +15,15 @@ import org.springframework.http.HttpHeaders;
 
 import java.security.Principal;
 
-import java.security.Principal;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Fase RED: Prueba de controlador para la US-017.
+ * Se utiliza el enfoque 'Standalone' de MockMvc debido a restricciones 
+ * en las dependencias del proyecto que impiden el uso de @WebMvcTest.
+ */
 @ExtendWith(MockitoExtension.class)
 class ReportControllerTest {
 
@@ -38,6 +42,7 @@ class ReportControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Configuración manual del entorno MockMvc para testear el controlador en aislamiento
         mockMvc = MockMvcBuilders.standaloneSetup(reportController).build();
     }
 
@@ -46,17 +51,22 @@ class ReportControllerTest {
     void deleteReport_ShouldReturnNoContent_WhenSuccessful() throws Exception {
         // GIVEN
         String period = "2024-03";
-        String userId = "QHlms0DALUgLnnXMffUBMP14v5m1";
+        String userId = "QHlms0DALUgLnnXMffUBMP14v5m1"; // Fallback userId when principal is null
 
-        Principal principal = mock(Principal.class);
-        when(principal.getName()).thenReturn(userId);
+        Principal mockPrincipal = new Principal() {
+            @Override
+            public String getName() {
+                return userId;
+            }
+        };
 
-        // WHEN & THEN
+        // WHEN & THEN: Se espera 204 No Content
         mockMvc.perform(delete("/api/v1/reports/{period}", period)
-                        .principal(principal))
+                .principal(mockPrincipal)
+                .header(HttpHeaders.AUTHORIZATION, mockToken))
                 .andExpect(status().isNoContent());
 
-        // THEN
-        verify(reportService).deleteReport(userId, period);
+        // THEN: Verificar que se llame al servicio
+        verify(reportCommandService).deleteReport(userId, period);
     }
 }
