@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run unit tests and verify coverage (70%)
+      - name: Run unit tests y Verificar Cobertura (70%)
         run: mvn clean verify --no-transfer-progress
         working-directory: app/backend-microservice/auth
 
