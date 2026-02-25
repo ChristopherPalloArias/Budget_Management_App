@@ -23,7 +23,7 @@ jobs:
           cache: 'maven'
 
       - name: Run unit tests y Verificar Cobertura (70%)
-        run: mvn test jacoco:report jacoco:check --no-transfer-progress
+        run: mvn clean test jacoco:report jacoco:check --no-transfer-progress
         working-directory: app/backend-microservice/report
 
       - name: Upload Surefire test reports
@@ -32,3 +32,10 @@ jobs:
         with:
           name: report-surefire-reports
           path: app/backend-microservice/report/target/surefire-reports/
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-jacoco-report
+          path: app/backend-microservice/report/target/site/jacoco/
