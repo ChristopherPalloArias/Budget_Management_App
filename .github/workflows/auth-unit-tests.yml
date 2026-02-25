@@ -21,7 +21,7 @@ jobs:
           cache: 'maven'
 
       - name: Run unit tests and verify coverage (70%)
-        run: mvn clean test jacoco:report jacoco:check --no-transfer-progress
+        run: mvn clean verify --no-transfer-progress
         working-directory: app/backend-microservice/auth
 
       - name: Upload Surefire test reports
