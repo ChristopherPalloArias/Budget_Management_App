@@ -23,7 +23,7 @@ jobs:
           cache: 'maven'
 
       - name: Run unit tests y Verificar Cobertura (70%)
-        run: mvn clean test --no-transfer-progress
+        run: mvn clean verify --no-transfer-progress
         working-directory: app/backend-microservice/report
 
       - name: Upload Surefire test reports
