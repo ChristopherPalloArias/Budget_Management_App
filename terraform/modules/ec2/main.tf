@@ -14,12 +14,13 @@ resource "local_sensitive_file" "private_key" {
 }
 
 resource "aws_instance" "web_server" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = aws_key_pair.generated_key.key_name
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.generated_key.key_name
+  vpc_security_group_ids      = [var.security_group_id]
+  associate_public_ip_address = false
 
-  vpc_security_group_ids = [var.security_group_id]
-  user_data              = templatefile("${path.module}/user_data.sh", {
+  user_data = templatefile("${path.module}/user_data.sh", {
     repo_url    = var.repo_url
     repo_branch = var.repo_branch
   })
@@ -35,17 +36,6 @@ output "instance_id" {
 
 output "private_key_path" {
   value = local_sensitive_file.private_key.filename
-}
-
-resource "aws_instance" "main" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  vpc_security_group_ids = [var.security_group_id]
-
-  tags = {
-    Name = "ec2-instance"
-    Environment = var.environment
-  }
 }
 
 output "instance_id" {
