@@ -1,0 +1,661 @@
+{
+  "info": {
+    "name": "Bug Validation Tests — ARCHITECTURE Audit",
+    "description": "Colección para validar los hallazgos del audit ARCHITECTURE.md (Activity 1.2)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "TRANSACTION_URL",
+      "value": "http://localhost:8081/api/v1/transactions"
+    },
+    {
+      "key": "REPORT_URL",
+      "value": "http://localhost:8082/api/v1/reports"
+    },
+    {
+      "key": "USER_ID",
+      "value": "test-user-123"
+    }
+  ],
+  "item": [
+    {
+      "name": "F-13 — Validation returns 500 instead of 400",
+      "item": [
+        {
+          "name": "F-13.1 — POST transaction with empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// BUG: Returns 500, should return 400",
+                  "pm.test('Should return 400 BAD REQUEST', function () {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Returns 500 instead of 400', function () {",
+                  "    if (pm.response.code === 500) {",
+                  "        pm.expect.fail('F-13 CONFIRMED: Server returns 500 for validation errors instead of 400');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-13.2 — POST transaction with negative amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"test-user\",\n  \"type\": \"EXPENSE\",\n  \"amount\": -50,\n  \"category\": \"Food\",\n  \"date\": \"2026-02-20\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 400 BAD REQUEST', function () {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Returns 500 instead of 400', function () {",
+                  "    if (pm.response.code === 500) {",
+                  "        pm.expect.fail('F-13 CONFIRMED: Negative amount triggers 500 instead of 400');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-13.3 — POST transaction with missing required fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"\",\n  \"type\": null,\n  \"amount\": null,\n  \"category\": \"\",\n  \"date\": null\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 400 with validation messages', function () {",
+                  "    pm.expect(pm.response.code).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Returns 500 instead of 400', function () {",
+                  "    if (pm.response.code === 500) {",
+                  "        pm.expect.fail('F-13 CONFIRMED: Null fields trigger 500 instead of 400');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-04 — No server-side authentication",
+      "item": [
+        {
+          "name": "F-04.1 — GET all transactions without auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 401 UNAUTHORIZED', function () {",
+                  "    pm.expect(pm.response.code).to.eql(401);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Returns 200 without auth', function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect.fail('F-04 CONFIRMED: All transactions exposed without authentication');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-04.2 — POST transaction with fake userId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"IMPERSONATED-USER-FAKE-ID\",\n  \"type\": \"INCOME\",\n  \"amount\": 999999.99,\n  \"category\": \"Impersonation Test\",\n  \"date\": \"2026-02-23\",\n  \"description\": \"This should be rejected - userId not verified\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 401 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Accepts fake userId', function () {",
+                  "    if (pm.response.code === 201) {",
+                  "        pm.expect.fail('F-04 CONFIRMED: Created transaction with impersonated userId');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-04.3 — GET reports for arbitrary user without auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/VICTIM-USER-ID/all",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["VICTIM-USER-ID", "all"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 401 UNAUTHORIZED', function () {",
+                  "    pm.expect(pm.response.code).to.eql(401);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Reports exposed without auth', function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect.fail('F-04 CONFIRMED: Financial reports exposed without authentication');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-03 — Inconsistent error schemas",
+      "item": [
+        {
+          "name": "F-03.1 — Transaction 404 (schema: dateTime + path)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}/99999",
+              "host": ["{{TRANSACTION_URL}}"],
+              "path": ["99999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "    pm.expect(pm.response.code).to.eql(404);",
+                  "});",
+                  "",
+                  "var body = pm.response.json();",
+                  "",
+                  "pm.test('Transaction uses dateTime field', function () {",
+                  "    pm.expect(body).to.have.property('dateTime');",
+                  "});",
+                  "",
+                  "pm.test('Transaction uses path field', function () {",
+                  "    pm.expect(body).to.have.property('path');",
+                  "});",
+                  "",
+                  "pm.test('F-03: Does NOT have timestamp field (inconsistent with Report)', function () {",
+                  "    pm.expect(body).to.not.have.property('timestamp');",
+                  "});",
+                  "",
+                  "pm.test('F-03: Does NOT have status field (inconsistent with Report)', function () {",
+                  "    pm.expect(body).to.not.have.property('status');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-03.2 — Report 404 (schema: timestamp + status)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/nonexistent-user?period=2026-01",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["nonexistent-user"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "2026-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "    pm.expect(pm.response.code).to.eql(404);",
+                  "});",
+                  "",
+                  "var body = pm.response.json();",
+                  "",
+                  "pm.test('Report uses timestamp field', function () {",
+                  "    pm.expect(body).to.have.property('timestamp');",
+                  "});",
+                  "",
+                  "pm.test('Report uses status field', function () {",
+                  "    pm.expect(body).to.have.property('status');",
+                  "});",
+                  "",
+                  "pm.test('F-03: Does NOT have dateTime field (inconsistent with Transaction)', function () {",
+                  "    pm.expect(body).to.not.have.property('dateTime');",
+                  "});",
+                  "",
+                  "pm.test('F-03: Does NOT have path field (inconsistent with Transaction)', function () {",
+                  "    pm.expect(body).to.not.have.property('path');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-02 — DELETE not idempotent",
+      "item": [
+        {
+          "name": "F-02.0 — Setup: Create transaction to generate report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}",
+              "host": ["{{TRANSACTION_URL}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"type\": \"INCOME\",\n  \"amount\": 100.00,\n  \"category\": \"Test\",\n  \"date\": \"2026-01-15\",\n  \"description\": \"Setup for delete test\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Transaction created', function () {",
+                  "    pm.expect(pm.response.code).to.eql(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-02.1 — Get reportId for delete test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/{{USER_ID}}/all",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["{{USER_ID}}", "all"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reports retrieved', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    var body = pm.response.json();",
+                  "    if (body.content && body.content.length > 0) {",
+                  "        pm.collectionVariables.set('REPORT_ID', body.content[0].reportId);",
+                  "        console.log('Saved REPORT_ID: ' + body.content[0].reportId);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-02.2 — First DELETE (should return 204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/{{REPORT_ID}}",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["{{REPORT_ID}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('First DELETE returns 204 NO CONTENT', function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-02.3 — Second DELETE (should be 204, returns 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/{{REPORT_ID}}",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["{{REPORT_ID}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Should return 204 (idempotent)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});",
+                  "",
+                  "pm.test('BUG DETECTED: Returns 404 on second DELETE', function () {",
+                  "    if (pm.response.code === 404) {",
+                  "        pm.expect.fail('F-02 CONFIRMED: DELETE is not idempotent — returns 404 on second call');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-05 — Missing PUT and DELETE on transactions",
+      "item": [
+        {
+          "name": "F-05.1 — PUT transaction (405 expected)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}/1",
+              "host": ["{{TRANSACTION_URL}}"],
+              "path": ["1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"type\": \"EXPENSE\",\n  \"amount\": 200.00,\n  \"category\": \"Updated Category\",\n  \"date\": \"2026-02-20\",\n  \"description\": \"Attempting update\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F-05 CONFIRMED: PUT not implemented', function () {",
+                  "    pm.expect(pm.response.code).to.eql(405);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-05.2 — DELETE transaction (405 expected)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}/1",
+              "host": ["{{TRANSACTION_URL}}"],
+              "path": ["1"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('F-05 CONFIRMED: DELETE not implemented', function () {",
+                  "    pm.expect(pm.response.code).to.eql(405);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-07 — Recalculate is a no-op",
+      "item": [
+        {
+          "name": "F-07.1 — GET report before recalculate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{REPORT_URL}}/{{USER_ID}}?period=2026-01",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["{{USER_ID}}"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "2026-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var body = pm.response.json();",
+                  "    pm.collectionVariables.set('BEFORE_INCOME', body.totalIncome);",
+                  "    pm.collectionVariables.set('BEFORE_EXPENSE', body.totalExpense);",
+                  "    pm.collectionVariables.set('BEFORE_BALANCE', body.balance);",
+                  "    console.log('Before — Income: ' + body.totalIncome + ', Expense: ' + body.totalExpense + ', Balance: ' + body.balance);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "F-07.2 — POST recalculate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{REPORT_URL}}/recalculate",
+              "host": ["{{REPORT_URL}}"],
+              "path": ["recalculate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"period\": \"2026-01\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Recalculate returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "var body = pm.response.json();",
+                  "var beforeIncome = pm.collectionVariables.get('BEFORE_INCOME');",
+                  "var beforeExpense = pm.collectionVariables.get('BEFORE_EXPENSE');",
+                  "var beforeBalance = pm.collectionVariables.get('BEFORE_BALANCE');",
+                  "",
+                  "pm.test('F-07 CONFIRMED: Values unchanged after recalculate', function () {",
+                  "    pm.expect(body.totalIncome).to.eql(Number(beforeIncome));",
+                  "    pm.expect(body.totalExpense).to.eql(Number(beforeExpense));",
+                  "    pm.expect(body.balance).to.eql(Number(beforeBalance));",
+                  "    console.log('After — Income: ' + body.totalIncome + ', Expense: ' + body.totalExpense + ', Balance: ' + body.balance);",
+                  "    console.log('F-07: Recalculate did NOT recompute values from transaction source');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F-11 — Generic error message without ID",
+      "item": [
+        {
+          "name": "F-11.1 — GET nonexistent transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{TRANSACTION_URL}}/12345",
+              "host": ["{{TRANSACTION_URL}}"],
+              "path": ["12345"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 404', function () {",
+                  "    pm.expect(pm.response.code).to.eql(404);",
+                  "});",
+                  "",
+                  "var body = pm.response.json();",
+                  "",
+                  "pm.test('F-11 CONFIRMED: Error message does not include ID', function () {",
+                  "    pm.expect(body.message).to.not.include('12345');",
+                  "    console.log('Message received: \"' + body.message + '\"');",
+                  "    console.log('Expected: \"Transaction not found with id: 12345\"');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
