@@ -42,7 +42,6 @@ export const LoginForm = () => {
           </Label>
           <Input
             id="email"
-            name="email"
             placeholder="ejemplo@correo.com"
             type="email" // Ensure correct type
             {...register('email')}
@@ -61,7 +60,6 @@ export const LoginForm = () => {
           </Label>
           <Input
             id="password"
-            name="password"
             placeholder="••••••••"
             type="password" // Ensure correct type
             {...register('password')}
