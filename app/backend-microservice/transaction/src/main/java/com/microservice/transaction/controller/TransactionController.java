@@ -3,17 +3,18 @@ package com.microservice.transaction.controller;
 import com.microservice.transaction.dto.PaginatedResponse;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
+import com.microservice.transaction.service.TransactionService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-
-import com.microservice.transaction.service.TransactionService;
-
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
@@ -29,6 +30,26 @@ import java.security.Principal;
 @RequestMapping("api/v1/transactions")
 public class TransactionController {
     private final TransactionService transactionService;
+    private final MeterRegistry meterRegistry;
+    private Counter transactionsCreatedCounter;
+    private Counter transactionsUpdatedCounter;
+    private Counter transactionsDeletedCounter;
+
+    @PostConstruct
+    void registerMetrics() {
+        this.transactionsCreatedCounter = Counter
+                .builder("app_transactions_created_total")
+                .description("Total de transacciones creadas")
+                .register(meterRegistry);
+        this.transactionsUpdatedCounter = Counter
+                .builder("app_transactions_updated_total")
+                .description("Total de transacciones actualizadas")
+                .register(meterRegistry);
+        this.transactionsDeletedCounter = Counter
+                .builder("app_transactions_deleted_total")
+                .description("Total de transacciones eliminadas")
+                .register(meterRegistry);
+    }
 
     @PostMapping
     public ResponseEntity<TransactionResponse> create(
@@ -36,6 +57,7 @@ public class TransactionController {
             Principal principal) {
         String userId = principal.getName();
         TransactionResponse created = transactionService.create(userId, dto);
+        transactionsCreatedCounter.increment();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(created);
@@ -69,6 +91,7 @@ public class TransactionController {
             Principal principal) {
         String userId = principal.getName();
         TransactionResponse updated = transactionService.updateTransaction(userId, id, dto);
+        transactionsUpdatedCounter.increment();
         return ResponseEntity.ok(updated);
     }
 
@@ -78,6 +101,7 @@ public class TransactionController {
             Principal principal) {
         String userId = principal.getName();
         transactionService.delete(userId, id);
+        transactionsDeletedCounter.increment();
         return ResponseEntity.noContent().build();
     }
 }
