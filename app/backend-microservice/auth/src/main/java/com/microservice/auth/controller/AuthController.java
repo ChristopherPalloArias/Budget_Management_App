@@ -1,5 +1,15 @@
 package com.microservice.auth.controller;
 
+import com.microservice.auth.dto.AuthResponse;
+import com.microservice.auth.dto.LoginRequest;
+import com.microservice.auth.dto.RegisterRequest;
+import com.microservice.auth.dto.UserResponse;
+import com.microservice.auth.service.AuthService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -9,31 +19,41 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.microservice.auth.dto.AuthResponse;
-import com.microservice.auth.dto.LoginRequest;
-import com.microservice.auth.dto.RegisterRequest;
-import com.microservice.auth.dto.UserResponse;
-import com.microservice.auth.service.AuthService;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private final MeterRegistry meterRegistry;
+
+    private Counter authRegistrationsCounter;
+    private Counter authLoginsCounter;
+
+    @PostConstruct
+    void registerMetrics() {
+        this.authRegistrationsCounter = Counter
+                .builder("app_auth_registrations_total")
+                .description("Total de usuarios registrados")
+                .register(meterRegistry);
+
+        this.authLoginsCounter = Counter
+                .builder("app_auth_logins_total")
+                .description("Total de logins exitosos")
+                .register(meterRegistry);
+    }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
+        authRegistrationsCounter.increment();
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        authLoginsCounter.increment();
         return ResponseEntity.ok(response);
     }
 

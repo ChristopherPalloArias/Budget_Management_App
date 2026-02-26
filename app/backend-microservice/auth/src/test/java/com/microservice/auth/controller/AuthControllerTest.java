@@ -37,6 +37,8 @@ import com.microservice.auth.exception.EmailAlreadyExistsException;
 import com.microservice.auth.exception.GlobalExceptionHandler;
 import com.microservice.auth.security.JwtTokenProvider;
 import com.microservice.auth.service.AuthService;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @WebMvcTest(AuthController.class)
 @Import({GlobalExceptionHandler.class, AuthControllerTest.TestSecurityConfig.class})
@@ -62,6 +64,11 @@ class AuthControllerTest {
         @Bean
         ObjectMapper objectMapper() {
             return new ObjectMapper();
+        }
+
+        @Bean
+        MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
     }
 

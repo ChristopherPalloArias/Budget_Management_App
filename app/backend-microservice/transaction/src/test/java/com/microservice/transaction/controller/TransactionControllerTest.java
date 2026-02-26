@@ -6,11 +6,11 @@ import com.microservice.transaction.exception.NotFoundException;
 import com.microservice.transaction.model.TransactionType;
 import com.microservice.transaction.service.TransactionService;
 import com.microservice.transaction.exception.GlobalExceptionHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -38,13 +38,16 @@ class TransactionControllerTest {
     @Mock
     private TransactionService transactionService;
 
-    @InjectMocks
     private TransactionController transactionController;
 
     @BeforeEach
     void setUp() {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
+
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        transactionController = new TransactionController(transactionService, meterRegistry);
+        transactionController.registerMetrics();
 
         mockMvc = MockMvcBuilders.standaloneSetup(transactionController)
                 .setControllerAdvice(new GlobalExceptionHandler())

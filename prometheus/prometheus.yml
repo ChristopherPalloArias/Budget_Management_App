@@ -1,0 +1,27 @@
+# ──────────────────────────────────────────────────────────────
+# Prometheus — Scraping Spring Boot Microservices (Actuator)
+# Targets: transaction:8081, report:8082, auth:8083
+# ──────────────────────────────────────────────────────────────
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Spring Boot microservices — Micrometer /actuator/prometheus
+  - job_name: 'spring-microservices'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'transaction:8081'
+          - 'report:8082'
+          - 'auth:8083'
+        labels:
+          env: 'prod'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'

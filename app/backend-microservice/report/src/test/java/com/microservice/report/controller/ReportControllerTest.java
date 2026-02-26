@@ -5,11 +5,11 @@ import com.microservice.report.dto.ReportResponse;
 import com.microservice.report.dto.ReportSummary;
 import com.microservice.report.service.ReportCommandService;
 import com.microservice.report.service.ReportQueryService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
@@ -49,12 +49,14 @@ class ReportControllerTest {
     private final String userId = "QHlms0DALUgLnnXMffUBMP14v5m1";
     private Principal mockPrincipal;
 
-    @InjectMocks
     private ReportController reportController;
 
     @BeforeEach
     void setUp() {
         mockPrincipal = () -> userId;
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        reportController = new ReportController(reportCommandService, reportQueryService, meterRegistry);
+        reportController.registerMetrics();
         mockMvc = MockMvcBuilders.standaloneSetup(reportController)
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();

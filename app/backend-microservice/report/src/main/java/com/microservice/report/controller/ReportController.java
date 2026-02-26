@@ -8,17 +8,20 @@ import com.microservice.report.service.ReportCommandService;
 import com.microservice.report.service.ReportQueryService;
 import com.microservice.report.util.PaginationUtils;
 import com.microservice.report.validation.ValidPeriod;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.security.Principal;
 
 /**
@@ -36,6 +39,23 @@ public class ReportController {
 
     private final ReportCommandService reportCommandService;
     private final ReportQueryService reportQueryService;
+    private final MeterRegistry meterRegistry;
+
+    private Counter reportsGeneratedCounter;
+    private Counter reportsRecalculatedCounter;
+
+    @PostConstruct
+    void registerMetrics() {
+        this.reportsGeneratedCounter = Counter
+                .builder("app_reports_generated_total")
+                .description("Total de reportes generados")
+                .register(meterRegistry);
+
+        this.reportsRecalculatedCounter = Counter
+                .builder("app_reports_recalculated_total")
+                .description("Total de reportes recalculados")
+                .register(meterRegistry);
+    }
 
     /**
      * Obtiene un reporte financiero para el usuario autenticado en un periodo específico.
@@ -50,6 +70,7 @@ public class ReportController {
             @RequestParam(required = false) @ValidPeriod String period) {
         String userId = principal.getName();
         ReportResponse report = reportQueryService.getReport(userId, period);
+        reportsGeneratedCounter.increment();
         return ResponseEntity.ok(report);
     }
 
@@ -107,6 +128,7 @@ public class ReportController {
             @Valid @RequestBody RecalculateReportRequest request) {
         String userId = principal.getName();
         ReportResponse response = reportCommandService.recalculateReport(userId, request.getPeriod(), token);
+        reportsRecalculatedCounter.increment();
         return ResponseEntity.ok(response);
     }
 
