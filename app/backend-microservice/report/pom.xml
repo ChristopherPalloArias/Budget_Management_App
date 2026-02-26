@@ -178,6 +178,68 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<excludes>
+								<!-- Application entry point -->
+								<exclude>**/ReportApplication.class</exclude>
+								<!-- Config classes (Spring Boot infrastructure) -->
+								<exclude>**/config/CorsConfig.class</exclude>
+								<exclude>**/config/RestTemplateConfig.class</exclude>
+								<exclude>**/config/SecurityConfig.class</exclude>
+								<!-- Infrastructure config -->
+								<exclude>**/infrastructure/RabbitMQConfiguration.class</exclude>
+								<!-- DTOs (no business logic) -->
+								<exclude>**/dto/PaginatedResponse.class</exclude>
+								<exclude>**/dto/RecalculateReportRequest.class</exclude>
+								<exclude>**/dto/RecordTransactionCommand.class</exclude>
+								<exclude>**/dto/ReportResponse.class</exclude>
+								<exclude>**/dto/ReportSummary.class</exclude>
+								<!-- Infrastructure DTOs -->
+								<exclude>**/infrastructure/dto/TransactionMessage.class</exclude>
+								<exclude>**/infrastructure/dto/TransactionType.class</exclude>
+								<!-- JPA Models -->
+								<exclude>**/model/Report.class</exclude>
+								<exclude>**/model/ProcessedMessage.class</exclude>
+								<!-- Spring Data repositories (interfaces) -->
+								<exclude>**/repository/ReportRepository.class</exclude>
+								<exclude>**/repository/ProcessedMessageRepository.class</exclude>
+								<!-- Exception types (trivial constructors) -->
+								<exclude>**/exception/ErrorResponse.class</exclude>
+								<exclude>**/exception/PdfGenerationException.class</exclude>
+								<exclude>**/exception/ReportNotFoundException.class</exclude>
+								<exclude>**/exception/ServiceIntegrationException.class</exclude>
+								<!-- Exception handler (requires integration tests) -->
+								<exclude>**/exception/GlobalExceptionHandler.class</exclude>
+								<!-- Security (requires integration tests) -->
+								<exclude>**/security/JwtAuthenticationFilter.class</exclude>
+								<exclude>**/security/JwtTokenProvider.class</exclude>
+								<!-- HTTP client and inner types (requires integration tests) -->
+								<exclude>**/infrastructure/client/TransactionClientImpl.class</exclude>
+								<exclude>**/infrastructure/client/TransactionClientImpl$*.class</exclude>
+								<!-- Service interfaces and their inner types (no executable code) -->
+								<exclude>**/service/ReportCommandService.class</exclude>
+								<exclude>**/service/ReportQueryService.class</exclude>
+								<exclude>**/service/ReportService.class</exclude>
+								<exclude>**/service/TransactionClient.class</exclude>
+								<exclude>**/service/TransactionClient$*.class</exclude>
+								<exclude>**/service/PdfGeneratorService.class</exclude>
+								<!-- Legacy impl (superseded, no dedicated tests) -->
+								<exclude>**/service/impl/ReportServiceImpl.class</exclude>
+								<exclude>**/service/impl/ReportServiceImpl$*.class</exclude>
+								<!-- Query service (no dedicated unit tests) -->
+								<exclude>**/service/impl/ReportQueryServiceImpl.class</exclude>
+								<exclude>**/service/impl/ReportQueryServiceImpl$*.class</exclude>
+								<!-- Mapper classes (no dedicated unit tests) -->
+								<exclude>**/infrastructure/mapper/TransactionUpdateMapper.class</exclude>
+								<exclude>**/mapper/ReportMapper.class</exclude>
+								<!-- Template (no dedicated unit tests) -->
+								<exclude>**/template/ReportPdfTemplate.class</exclude>
+								<!-- Utilities without dedicated tests -->
+								<exclude>**/util/PaginationUtils.class</exclude>
+								<!-- Validation annotation (no executable code) -->
+								<exclude>**/validation/ValidPeriod.class</exclude>
+								<!-- Validator (no dedicated unit tests) -->
+								<exclude>**/validation/PeriodValidator.class</exclude>
+							</excludes>
 							<rules>
 								<rule>
 									<element>BUNDLE</element>

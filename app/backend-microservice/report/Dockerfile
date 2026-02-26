@@ -5,6 +5,7 @@ RUN apk upgrade --no-cache
 # Set working directory
 WORKDIR /app
 
+
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
@@ -47,3 +48,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
+# End of Dockerfile

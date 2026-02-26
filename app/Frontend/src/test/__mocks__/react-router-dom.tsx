@@ -1,7 +1,7 @@
 import * as React from "react";
 
 export const useNavigate = jest.fn(() => jest.fn());
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const Navigate = jest.fn(({ to }: { to: string; replace?: boolean }) => {
   return (
     <div data-testid="redirect" data-to={to}>

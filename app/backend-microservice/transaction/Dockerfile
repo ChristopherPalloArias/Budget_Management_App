@@ -5,6 +5,8 @@ RUN apk upgrade --no-cache
 # Set working directory
 WORKDIR /app
 
+# End of Dockerfile
+
 # Copy Maven wrapper and pom.xml
 COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn

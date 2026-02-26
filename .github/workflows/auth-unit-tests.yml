@@ -1,5 +1,4 @@
 name: Auth Unit Tests
-
 on:
   pull_request:
     branches:
@@ -10,7 +9,6 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,3 +30,10 @@ jobs:
         with:
           name: auth-surefire-reports
           path: app/backend-microservice/auth/target/surefire-reports/
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-jacoco-report
+          path: app/backend-microservice/auth/target/site/jacoco/
