@@ -81,7 +81,7 @@ The backend adopts an **Event-Driven Microservices** architecture with a **Layer
 | `GET /api/v1/reports/{userId}/all` | GET | **Yes** | Paginated collection read |
 | `GET /api/v1/reports/{userId}/summary` | GET | **Yes** | Computed aggregate — safe, idempotent |
 | `GET /api/v1/reports/{userId}/pdf` | GET | **Yes** | Binary download; safe, idempotent |
-| `POST /api/v1/reports/recalculate` | POST | **Issue** | See finding F-01 below |
+| `PUT /api/v1/reports/recalculate` | PUT | **Yes** | Idempotent update operation (changed from POST) |
 | `DELETE /api/v1/reports/{reportId}` | DELETE | **Yes** | Idempotent removal by numeric ID |
 | `DELETE /api/v1/reports/{period}` | DELETE | **Yes** | Idempotent removal by period string |
 
@@ -91,7 +91,7 @@ The backend adopts an **Event-Driven Microservices** architecture with a **Layer
 |---|---|---|---|
 | GET | Idempotent | All GET handlers return consistent reads | Compliant |
 | POST (transaction) | Non-idempotent | Each call creates a new row | Compliant |
-| POST (recalculate) | Non-idempotent | Each call saves (even without changes) | Acceptable |
+| PUT (recalculate) | Idempotent | Updates existing report with recalculated values | Compliant |
 | DELETE | Idempotent | Throws `ReportNotFoundException` on second call | **Non-compliant** (F-02) |
 
 ### 2.3 Status Code Strategy
@@ -481,9 +481,9 @@ Body: Binary PDF content.
 
 ---
 
-#### POST /api/v1/reports/recalculate
+#### PUT /api/v1/reports/recalculate
 
-**Description:** Triggers recalculation of a report for a specific user and period.
+**Description:** Updates an existing report by recalculating totals for a specific user and period. This is an idempotent operation.
 
 **Headers:**
 | Header | Value |
@@ -931,17 +931,17 @@ The Transaction service restricts CORS methods to GET/POST/OPTIONS, which is con
 
 ![F-07.1 GET antes de recalcular](imagenes/f07/F-07_1_antes_recalcular.png)
 
-#### Test F-07.2 — POST recalculate y verificar que valores NO cambian
+#### Test F-07.2 — PUT recalculate y verificar que valores NO cambian
 
 | Campo | Valor |
 |---|---|
-| **Method** | `POST` |
+| **Method** | `PUT` |
 | **URL** | `http://localhost:8082/api/v1/reports/recalculate` |
 | **Body** | `{"userId":"{userId}","period":"2026-01"}` |
 | **Status** | `200 OK` |
 | **Resultado** | `totalIncome`, `totalExpense` y `balance` son identicos al paso anterior. Solo cambia `updatedAt`. |
 
-![F-07.2 POST recalculate sin cambios](imagenes/f07/F-07_2_despues_recalcular.png)
+![F-07.2 PUT recalculate sin cambios](imagenes/f07/F-07_2_despues_recalcular.png)
 
 ---
 

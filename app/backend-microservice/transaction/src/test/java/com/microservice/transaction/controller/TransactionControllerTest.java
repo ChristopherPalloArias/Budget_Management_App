@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,7 +98,7 @@ class TransactionControllerTest {
         Long transactionId = 999L;
 
         when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
-                .thenThrow(new NotFoundException("Transaction not found"));
+                .thenThrow(new NotFoundException("Transaction not found with id: " + transactionId));
 
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("user-123");
@@ -134,5 +135,59 @@ class TransactionControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    @DisplayName("delete — happy path: returns 204 NO CONTENT")
+    void shouldDeleteTransactionSuccessfully() throws Exception {
+        Long transactionId = 123L;
+        
+        doNothing().when(transactionService).delete(eq("user-123"), eq(transactionId));
+        
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("user-123");
+        
+        mockMvc.perform(delete("/api/v1/transactions/{id}", transactionId)
+                        .principal(principal))
+                .andExpect(status().isNoContent());
+        
+        verify(transactionService).delete(eq("user-123"), eq(transactionId));
+    }
+
+    @Test
+    @DisplayName("delete — not found: returns 404 when transaction does not exist")
+    void shouldReturn404_whenDeleteNonExistentTransaction() throws Exception {
+        Long transactionId = 999L;
+        
+        doThrow(new NotFoundException("Transaction not found with id: " + transactionId))
+                .when(transactionService).delete(eq("user-123"), eq(transactionId));
+        
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("user-123");
+        
+        mockMvc.perform(delete("/api/v1/transactions/{id}", transactionId)
+                        .principal(principal))
+                .andExpect(status().isNotFound());
+        
+        verify(transactionService).delete(eq("user-123"), eq(transactionId));
+    }
+
+    @Test
+    @DisplayName("delete — access denied: returns 404 when trying to delete another user's transaction")
+    void shouldReturn404_whenDeletingOtherUserTransaction() throws Exception {
+        Long transactionId = 123L;
+        
+        // Por seguridad, retornar 404 en lugar de 403 para no divulgar existencia del recurso
+        doThrow(new NotFoundException("Transaction not found with id: " + transactionId))
+                .when(transactionService).delete(eq("user-123"), eq(transactionId));
+        
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("user-123");
+        
+        mockMvc.perform(delete("/api/v1/transactions/{id}", transactionId)
+                        .principal(principal))
+                .andExpect(status().isNotFound());
+        
+        verify(transactionService).delete(eq("user-123"), eq(transactionId));
     }
 }

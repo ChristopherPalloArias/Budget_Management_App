@@ -205,4 +205,84 @@ class TransactionServiceImplTest {
 
         verifyNoInteractions(transactionRepository, eventPublisher);
     }
+
+    @Test
+    @DisplayName("delete — happy path: deletes transaction and publishes event")
+    void delete_withValidTransaction_shouldDeleteAndPublishEvent() {
+        String userId = "user-123";
+        Long transactionId = 1L;
+
+        Transaction existingTransaction = Transaction.builder()
+                .transactionId(transactionId)
+                .userId(userId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.00"))
+                .category("Alimentacion")
+                .date(LocalDate.of(2025, 3, 10))
+                .description("Compra")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(transactionRepository.findById(transactionId))
+                .thenReturn(Optional.of(existingTransaction));
+
+        transactionService.delete(userId, transactionId);
+
+        verify(transactionRepository).delete(existingTransaction);
+        verify(eventPublisher).publishDeleted(existingTransaction);
+    }
+
+    @Test
+    @DisplayName("delete — not found: throws exception when transaction does not exist")
+    void delete_withNonExistentTransaction_shouldThrowNotFoundException() {
+        String userId = "user-123";
+        Long transactionId = 999L;
+
+        when(transactionRepository.findById(transactionId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> transactionService.delete(userId, transactionId),
+                "Should throw NotFoundException when transaction does not exist"
+        );
+
+        verify(transactionRepository, never()).delete(any());
+        verify(eventPublisher, never()).publishDeleted(any());
+    }
+
+    @Test
+    @DisplayName("delete — access denied: throws exception when trying to delete another user's transaction")
+    void delete_withOtherUserTransaction_shouldThrowNotFoundException() {
+        String userId = "user-123";
+        String otherUserId = "user-456";
+        Long transactionId = 1L;
+
+        Transaction existingTransaction = Transaction.builder()
+                .transactionId(transactionId)
+                .userId(otherUserId)  // Pertenece a otro usuario
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.00"))
+                .category("Alimentacion")
+                .date(LocalDate.of(2025, 3, 10))
+                .description("Compra")
+                .createdAt(OffsetDateTime.now())
+                .build();
+
+        when(transactionRepository.findById(transactionId))
+                .thenReturn(Optional.of(existingTransaction));
+
+        // Por seguridad, se lanza NotFoundException en lugar de AccessDeniedException
+        // para no revelar la existencia del recurso
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> transactionService.delete(userId, transactionId),
+                "Should throw NotFoundException when trying to delete another user's transaction"
+        );
+        
+        // ✅ Verificar que el mensaje incluya el ID
+        assertTrue(exception.getMessage().contains("with id: " + transactionId),
+                "Error message should include the transaction ID for debugging");
+
+        verify(transactionRepository, never()).delete(any());
+        verify(eventPublisher, never()).publishDeleted(any());
+    }
 }

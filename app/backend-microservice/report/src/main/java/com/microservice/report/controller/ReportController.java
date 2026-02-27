@@ -111,17 +111,20 @@ public class ReportController {
     /**
      * Recalcula el reporte financiero para el usuario autenticado en un período específico.
      *
-     * <p>Este endpoint procesa una solicitud de recalculación obteniendo todas las
+     * <p>Este endpoint actualiza un reporte existente obteniendo todas las
      * transacciones del período y recalculando los totales de ingresos, gastos y balance.</p>
+     *
+     * <p>Esta operación es idempotente: múltiples llamadas con los mismos parámetros
+     * producen el mismo resultado.</p>
      *
      * <p><strong>Seguridad:</strong> El userId del usuario autenticado se valida contra
      * el userId en el request. Si no coinciden, se retorna un error de Acceso Denegado.</p>
      *
      * @param principal Usuario autenticado
      * @param request DTO con el period requerido (userId debe coincidir con el autenticado)
-     * @return Respuesta con el reporte recalculado (balance, period)
+     * @return Respuesta con el reporte recalculado (200 OK)
      */
-    @PostMapping("/recalculate")
+    @PutMapping("/recalculate")
     public ResponseEntity<ReportResponse> recalculateReport(
             Principal principal,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String token,
