@@ -55,4 +55,19 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<CustomErrorResponse> handleConstraintViolation(jakarta.validation.ConstraintViolationException ex, HttpServletRequest request) {
+        String violations = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + " " + violation.getMessage())
+                .reduce((msg1, msg2) -> msg1 + ", " + msg2)
+                .orElse("Constraint violation");
+        
+        CustomErrorResponse body = CustomErrorResponse.builder()
+                .message("Constraint validation failed: " + violations)
+                .path(request.getRequestURI())
+                .dateTime(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
 }
