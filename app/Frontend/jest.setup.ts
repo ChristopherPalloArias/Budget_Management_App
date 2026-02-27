@@ -108,3 +108,33 @@ jest.mock("@/core/api/HttpClient", () => ({
   PROD: false,
   SSR: false,
 };
+
+// Mock lucide-react to avoid "Element type is invalid" when icons are used but not mocked
+jest.mock('lucide-react', () => {
+  const React = require('react');
+  const original = jest.requireActual('lucide-react');
+  
+  // Helper to create a mock icon component
+  const createMockIcon = (name: string) => {
+    const MockIcon = (props: any) => React.createElement('div', { ...props, 'data-testid': `icon-$ {name.toLowerCase()}` });
+    MockIcon.displayName = name;
+    return MockIcon;
+  };
+
+  // We can use a Proxy to catch all icon requests if needed, but let's stick to common ones for now
+  // or just return the original if it exists, otherwise a mock.
+  const icons: any = { ...original };
+  const commonIcons = [
+    'Home', 'TrendingUp', 'FileText', 'Moon', 'Sun', 'Laptop', 
+    'LogOut', 'ChevronsUpDown', 'Bell', 'BadgeCheck', 'Sparkles', 
+    'PanelLeft', 'Search', 'User', 'Settings', 'CreditCard', 'MoreHorizontal'
+  ];
+
+  commonIcons.forEach(name => {
+    if (!icons[name]) {
+      icons[name] = createMockIcon(name);
+    }
+  });
+
+  return icons;
+});

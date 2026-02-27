@@ -75,7 +75,7 @@ export const formatNumber = (amount: any): string => {
  * @returns true si es un número válido
  */
 export const isValidNumber = (value: any): boolean => {
-  if (value === null || value === undefined || value === '') {
+  if (value === undefined || value === '') {
     return false;
   }
   

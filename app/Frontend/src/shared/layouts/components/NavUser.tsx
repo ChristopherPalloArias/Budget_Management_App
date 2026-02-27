@@ -1,4 +1,4 @@
-import { useUserStore } from "../../../modules/auth/store/useUserStore"
+import { useUserStore } from "@/modules/auth/store/useUserStore"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,14 +6,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { LogOut } from "lucide-react"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "../../../components/ui/sidebar"
+} from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function NavUser() {

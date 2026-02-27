@@ -1,6 +1,6 @@
 import type { ReportsSummaryModel, ReportModel, ReportFilters, RecalculateReportRequest, RecalculateReportResponse } from '../types/report.types';
 import { reportAdapter, reportListAdapter } from '../adapters/report.adapter';
-import HttpClient from '../../../core/api/HttpClient';
+import HttpClient from '@/core/api/HttpClient';
 import type { ReportResponse, ReportItemResponse } from '../types/report.types';
 
 // Obtener instancia específica para el microservicio de reports

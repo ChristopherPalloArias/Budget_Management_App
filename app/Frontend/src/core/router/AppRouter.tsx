@@ -1,13 +1,13 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { PublicLayout } from "../../shared/layouts/PublicLayout";
-import { DashboardLayout } from "../../shared/layouts/DashboardLayout";
-import { ProtectedRoute, PublicRoute } from "../../modules/auth";
+import { PublicLayout } from "@/shared/layouts/PublicLayout";
+import { DashboardLayout } from "@/shared/layouts/DashboardLayout";
+import { ProtectedRoute, PublicRoute } from "@/modules/auth";
 
-const LoginPage = lazy(() => import("../../modules/auth/pages/LoginPage").then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import("../../modules/auth/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
-const TransactionPage = lazy(() => import("../../modules/transactions/pages/TransactionPage").then(m => ({ default: m.TransactionPage })));
-const ReportsPage = lazy(() => import("../../modules/reports/pages/ReportsPage").then(m => ({ default: m.ReportsPage })));
+const LoginPage = lazy(() => import("@/modules/auth/pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("@/modules/auth/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
+const TransactionPage = lazy(() => import("@/modules/transactions/pages/TransactionPage").then(m => ({ default: m.TransactionPage })));
+const ReportsPage = lazy(() => import("@/modules/reports/pages/ReportsPage").then(m => ({ default: m.ReportsPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[200px]">

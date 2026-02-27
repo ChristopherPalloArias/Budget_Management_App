@@ -2,7 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeToggle } from '../ThemeToggle';
 
 // Mock UI components - simplified to avoid portal issues
-jest.mock('../../../components/ui/dropdown-menu', () => ({
+jest.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,

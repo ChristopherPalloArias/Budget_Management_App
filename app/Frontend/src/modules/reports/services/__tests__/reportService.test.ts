@@ -1,4 +1,4 @@
-import HttpClient from '../../../../core/api/HttpClient';
+import HttpClient from '@/core/api/HttpClient';
 import { getReportsSummary, getReportByPeriod, downloadReportPdf, deleteReport, recalculateReport } from '../reportService';
 
 // Mock HttpClient

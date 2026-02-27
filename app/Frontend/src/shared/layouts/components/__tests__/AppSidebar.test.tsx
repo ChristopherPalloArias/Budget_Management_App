@@ -2,8 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { AppSidebar } from '../AppSidebar';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock UI components - fixed relative paths and ensured all named exports are present
-jest.mock('../../../../components/ui/sidebar', () => ({
+// Mock UI components - use @ alias and fix nesting
+jest.mock('@/components/ui/sidebar', () => ({
+  __esModule: true,
   Sidebar: ({ children }: any) => <aside>{children}</aside>,
   SidebarContent: ({ children }: any) => <div>{children}</div>,
   SidebarFooter: ({ children }: any) => <footer>{children}</footer>,
@@ -12,12 +13,13 @@ jest.mock('../../../../components/ui/sidebar', () => ({
   SidebarGroupLabel: ({ children }: any) => <div>{children}</div>,
   SidebarHeader: ({ children }: any) => <header>{children}</header>,
   SidebarMenu: ({ children }: any) => <ul>{children}</ul>,
-  SidebarMenuButton: ({ children }: any) => <li>{children}</li>,
+  SidebarMenuButton: ({ children }: any) => <div data-testid="menu-button">{children}</div>,
   SidebarMenuItem: ({ children }: any) => <li>{children}</li>,
   useSidebar: () => ({ isMobile: false, open: true, setOpen: jest.fn(), openMobile: false, setOpenMobile: jest.fn(), toggleSidebar: jest.fn() }),
 }));
 
 jest.mock('../NavUser', () => ({
+  __esModule: true,
   NavUser: () => <div data-testid="nav-user">NavUser</div>
 }));
 

@@ -11,7 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "../../../components/ui/sidebar"
+} from "@/components/ui/sidebar"
 import { NavUser } from "./NavUser"
 
 const items = [

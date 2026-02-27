@@ -47,8 +47,8 @@ describe('NavUser', () => {
 
     render(<NavUser />);
     
-    expect(screen.getByText('Test User')).toBeDefined();
-    expect(screen.getByText('test@example.com')).toBeDefined();
+    expect(screen.getAllByText('Test User').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('test@example.com').length).toBeGreaterThan(0);
   });
 
   it('should call logout on menu item click', () => {
