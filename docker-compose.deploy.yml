@@ -21,6 +21,8 @@ services:
     networks:
       - finance-network
     restart: unless-stopped
+    volumes:
+      - mysql-transactions-data:/var/lib/mysql
 
   mysql-reports:
     image: mysql:8.0
@@ -35,6 +37,8 @@ services:
     networks:
       - finance-network
     restart: unless-stopped
+    volumes:
+      - mysql-reports-data:/var/lib/mysql
 
   mysql-auth:
     image: mysql:8.0
@@ -49,6 +53,8 @@ services:
     networks:
       - finance-network
     restart: unless-stopped
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
 
   rabbitmq:
     image: rabbitmq:4.0-management
@@ -62,6 +68,8 @@ services:
     networks:
       - finance-network
     restart: unless-stopped
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
   # ─── DYNAMIC MICROSERVICES ─────────────────────
   transaction:
@@ -104,7 +112,6 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
-      
     restart: unless-stopped
     networks:
       finance-network:
@@ -138,54 +145,8 @@ services:
     networks:
       - finance-network
 
-  prometheus:
-    image: prom/prometheus:v2.52.0
-    container_name: prometheus-prod
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    depends_on:
-      - transaction
-      - report
-      - auth
-    restart: unless-stopped
-    networks:
-      - finance-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-# ────────────────────────────────────────────────────────────── # Budget Management App — DYNAMIC PRODUCTION DEPLOYMENT # ────────────────────────────────────────────────────────────── networks: finance-network: driver: bridge services: # ─── INFRASTRUCTURE (Databases & Message Broker) ───────────── mysql-transactions: image: mysql:8.0 container_name: mysql-transactions-prod environment: MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} MYSQL_DATABASE: transactions_db MYSQL_USER: ${DB_USERNAME} MYSQL_PASSWORD: ${DB_PASSWORD} ports: - "3307:3306" networks: - finance-network restart: unless-stopped mysql-reports: image: mysql:8.0 container_name: mysql-reports-prod environment: MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} MYSQL_DATABASE: reports_db MYSQL_USER: ${DB_USERNAME} MYSQL_PASSWORD: ${DB_PASSWORD} ports: - "3308:3306" networks: - finance-network restart: unless-stopped mysql-auth: image: mysql:8.0 container_name: mysql-auth-prod environment: MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} MYSQL_DATABASE: auth_db MYSQL_USER: ${DB_USERNAME} MYSQL_PASSWORD: ${DB_PASSWORD} ports: - "3309:3306" networks: - finance-network restart: unless-stopped rabbitmq: image: rabbitmq:4.0-management container_name: rabbitmq-prod environment: RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER} RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS} ports: - "5672:5672" - "15672:15672" # Dashboard de RabbitMQ networks: - finance-network restart: unless-stopped # ─── DYNAMIC MICROSERVICES ───────────────────── transaction: image: ${DOCKERHUB_USERNAME}/budget-transaction:${IMAGE_TAG:-latest} container_name: transaction-prod ports: - "8081:8081" depends_on: - mysql-transactions - rabbitmq environment: SPRING_DATASOURCE_URL: jdbc:mysql://mysql-transactions:3306/transactions_db DB_USERNAME: ${DB_USERNAME} DB_PASSWORD: ${DB_PASSWORD} JWT_SECRET: ${JWT_SECRET} SPRING_RABBITMQ_HOST: rabbitmq SPRING_RABBITMQ_PORT: 5672 SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER} SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS} restart: unless-stopped networks: finance-network: aliases: - transaction report: image: ${DOCKERHUB_USERNAME}/budget-report:${IMAGE_TAG:-latest} container_name: report-prod ports: - "8082:8082" depends_on: - mysql-reports - rabbitmq environment: SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reports:3306/reports_db DB_USERNAME: ${DB_USERNAME} DB_PASSWORD: ${DB_PASSWORD} JWT_SECRET: ${JWT_SECRET} SPRING_RABBITMQ_HOST: rabbitmq SPRING_RABBITMQ_PORT: 5672 SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER} SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS} restart: unless-stopped networks: finance-network: aliases: - report auth: image: ${DOCKERHUB_USERNAME}/budget-auth:${IMAGE_TAG:-latest} container_name: auth-prod ports: - "8083:8083" depends_on: - mysql-auth environment: SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/auth_db DB_USERNAME: ${DB_USERNAME} DB_PASSWORD: ${DB_PASSWORD} JWT_SECRET: ${JWT_SECRET} restart: unless-stopped networks: finance-network: aliases: - auth frontend: image: ${DOCKERHUB_USERNAME}/budget-frontend:${IMAGE_TAG:-latest} container_name: frontend-prod ports: - "3000:3000" restart: unless-stopped networks: - finance-network prometheus: image: prom/prometheus:v2.52.0 container_name: prometheus-prod command: - '--config.file=/etc/prometheus/prometheus.yml' - '--storage.tsdb.path=/prometheus' - '--web.console.libraries=/usr/share/prometheus/console_libraries' - '--web.console.templates=/usr/share/prometheus/consoles' - '--web.enable-lifecycle' ports: - "9090:9090" volumes: - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro - prometheus-data:/prometheus depends_on: - transaction - report - auth restart: unless-stopped networks: - finance-network healthcheck: test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"] interval: 30s timeout: 10s retries: 3
-
-  # ─── MANAGEMENT & MONITORING ─────────────────────────────────
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer-prod
-    ports:
-      - "9000:9000"   # UI web
-      - "9443:9443"   # UI web (HTTPS)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # acceso al daemon de Docker
-      - portainer-data:/data                        # persistencia de configuración
-    restart: unless-stopped
-    networks:
-      - finance-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000/api/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 volumes:
-  prometheus-data:
-  portainer-data:    # ← volumen persistente para Portainer
+  mysql-transactions-data:
+  mysql-reports-data:
+  mysql-auth-data:
+  rabbitmq-data:
