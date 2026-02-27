@@ -98,18 +98,22 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(existingReport));
 
-        // Mock: simulamos que el repositorio persiste y retorna con nuevos valores
-        Report updatedReport = Report.builder()
-                .reportId(1L)
-                .userId(userId)
-                .period(period)
-                .totalIncome(BigDecimal.valueOf(1200))   // Recalculado
-                .totalExpense(BigDecimal.valueOf(200))   // Recalculado
-                .balance(BigDecimal.valueOf(1000))       // Recalculado: 1200 - 200
-                .build();
+        // Mock: transactionClient retorna transacciones del periodo
+        // 2 INCOME + 1 EXPENSE = 1200 income, 200 expense, 1000 balance
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(700)),
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(500)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(200))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
 
+        // Mock: el save captura el reporte y lo retorna (el balance se calcula automáticamente)
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(updatedReport);
+                .thenAnswer(invocation -> {
+                    Report saved = invocation.getArgument(0);
+                    return saved;
+                });
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -119,13 +123,14 @@ class ReportServiceImplTest {
         assertEquals(userId, response.userId());
         assertEquals(period, response.period());
         assertEquals(0, response.totalIncome().compareTo(BigDecimal.valueOf(1200)),
-                "totalIncome debe ser recalculado correctamente");
+                "totalIncome debe ser recalculado correctamente desde transacciones (700 + 500)");
         assertEquals(0, response.totalExpense().compareTo(BigDecimal.valueOf(200)),
-                "totalExpense debe ser recalculado correctamente");
+                "totalExpense debe ser recalculado correctamente desde transacciones");
         assertEquals(0, response.balance().compareTo(BigDecimal.valueOf(1000)),
-                "balance debe ser recalculado como (income - expense)");
+                "balance debe ser recalculado como (income - expense) = 1200 - 200");
 
-        // Verify
+        // Verify: se consultan las transacciones del periodo
+        verify(transactionClient).fetchTransactions(period, mockToken);
         verify(reportRepository).findByUserIdAndPeriod(userId, period);
         verify(reportRepository).save(any(Report.class));
     }
@@ -155,9 +160,13 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(reportWithoutTransactions));
 
-        // Mock: al persistir, retorna el mismo reporte (sin cambios)
+        // Mock: transactionClient retorna lista vacía (sin transacciones en el periodo)
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(Collections.emptyList());
+
+        // Mock: al persistir, captura y retorna el mismo reporte
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithoutTransactions);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -171,7 +180,8 @@ class ReportServiceImplTest {
         assertEquals(0, response.balance().compareTo(BigDecimal.ZERO),
                 "balance debe permanecer en ZERO si no hay transacciones");
 
-        // Verify
+        // Verify: se consultan las transacciones aunque estén vacías
+        verify(transactionClient).fetchTransactions(period, mockToken);
         verify(reportRepository).findByUserIdAndPeriod(userId, period);
         verify(reportRepository).save(any(Report.class));
     }
@@ -228,8 +238,16 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(reportWithConsistentData));
 
+        // Mock: transactionClient retorna las mismas transacciones en múltiples llamadas
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(2000)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(500))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithConsistentData);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act) - Recalcular dos veces
         ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -247,6 +265,7 @@ class ReportServiceImplTest {
                 "balance debe ser idéntico en múltiples recalculaciones");
 
         // Verify: reportRepository.save() debe ser llamado 2 veces (una por cada recalculación)
+        verify(transactionClient, times(2)).fetchTransactions(period, mockToken);
         verify(reportRepository, times(2)).findByUserIdAndPeriod(userId, period);
         verify(reportRepository, times(2)).save(any(Report.class));
     }
@@ -271,21 +290,20 @@ class ReportServiceImplTest {
                 .balance(BigDecimal.valueOf(-700))       // Balance negativo: 500 - 1200
                 .build();
 
-        Report expectedSavedReport = Report.builder()
-                .reportId(4L)
-                .userId(userId)
-                .period(period)
-                .totalIncome(BigDecimal.valueOf(500))
-                .totalExpense(BigDecimal.valueOf(1200))
-                .balance(BigDecimal.valueOf(-700))
-                .build();
-
         // Mock
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(reportWithNegativeBalance));
 
+        // Mock: transacciones que generan balance negativo
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(500)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(1200))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(expectedSavedReport);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -298,6 +316,7 @@ class ReportServiceImplTest {
                 "balance debe ser menor que cero");
 
         // Verify
+        verify(transactionClient).fetchTransactions(period, mockToken);
         verify(reportRepository).findByUserIdAndPeriod(userId, period);
         verify(reportRepository).save(any(Report.class));
     }
@@ -410,21 +429,19 @@ class ReportServiceImplTest {
                 .balance(BigDecimal.valueOf(500))
                 .build();
 
-        // Mock: reporte con montos en cero después de recalcular
-        Report reportWithZeros = Report.builder()
-                .reportId(6L)
-                .userId(userId)
-                .period(period)
-                .totalIncome(BigDecimal.ZERO)
-                .totalExpense(BigDecimal.ZERO)
-                .balance(BigDecimal.ZERO)
-                .build();
-
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(existingReport));
 
+        // Mock: transacciones con montos en cero
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.ZERO),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.ZERO)
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithZeros);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -472,8 +489,16 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(existingReport));
 
+        // Mock: transacciones con montos muy grandes
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", new BigDecimal("9999999999.99")),
+                new TransactionClient.TransactionData("EXPENSE", new BigDecimal("5000000000.00"))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithLargeAmounts);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -530,8 +555,17 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(existingReport));
 
+        // Mock: generar 1000 transacciones (500 INCOME de $500 c/u + 500 EXPENSE de $250 c/u)
+        List<TransactionClient.TransactionData> manyTransactions = new ArrayList<>();
+        for (int i = 0; i < 500; i++) {
+            manyTransactions.add(new TransactionClient.TransactionData("INCOME", new BigDecimal("1000.00")));
+            manyTransactions.add(new TransactionClient.TransactionData("EXPENSE", new BigDecimal("500.00")));
+        }
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(manyTransactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(reportWithManyTransactions);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -574,8 +608,16 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(consistentReport));
 
+        // Mock: transacciones consistentes
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(3000)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(1000))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(consistentReport);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act) - Recalcular 3 veces
         ReportResponse response1 = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -627,9 +669,17 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(report));
 
+        // Mock: transacciones consistentes
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(1500)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(750))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
                 .thenThrow(new RuntimeException("Database timeout"))  // Primera falla
-                .thenReturn(report);  // Segunda tiene éxito
+                .thenAnswer(invocation -> invocation.getArgument(0));  // Segunda tiene éxito
 
         // When & Then (Act & Assert)
         // Primera llamada debe fallar
@@ -675,8 +725,16 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(oldReport));
 
+        // Mock: transacciones del periodo antiguo
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(100)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(50))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(oldReport);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
@@ -710,8 +768,16 @@ class ReportServiceImplTest {
         when(reportRepository.findByUserIdAndPeriod(userId, period))
                 .thenReturn(Optional.of(futureReport));
 
+        // Mock: transacciones del periodo futuro
+        List<TransactionClient.TransactionData> transactions = List.of(
+                new TransactionClient.TransactionData("INCOME", BigDecimal.valueOf(5000)),
+                new TransactionClient.TransactionData("EXPENSE", BigDecimal.valueOf(2000))
+        );
+        when(transactionClient.fetchTransactions(period, mockToken))
+                .thenReturn(transactions);
+
         when(reportRepository.save(any(Report.class)))
-                .thenReturn(futureReport);
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When (Act)
         ReportResponse response = reportCommandService.recalculateReport(userId, period, mockToken);
