@@ -11,7 +11,7 @@ describe('TransactionBusinessLogic', () => {
   const mockFormData = {
     description: 'Test',
     amount: 100,
-    category: 'FOOD',
+    category: 'Alimentación',
     type: 'EXPENSE',
     date: new Date()
   } as any;
@@ -39,7 +39,13 @@ describe('TransactionBusinessLogic', () => {
         const invalidData = { ...mockFormData, amount: -10 };
         await expect(transactionBusinessLogic.createTransaction(invalidData, 'user1'))
           .rejects.toThrow(ValidationError);
-      });
+    });
+
+    it('should throw ValidationError if category is invalid', async () => {
+      const invalidData = { ...mockFormData, category: 'INVALID' };
+      await expect(transactionBusinessLogic.createTransaction(invalidData, 'user1'))
+        .rejects.toThrow('Invalid category');
+    });
   });
 
   describe('calculateMonthlyTotal', () => {
@@ -58,15 +64,15 @@ describe('TransactionBusinessLogic', () => {
   describe('getCategoryTotals', () => {
     it('should group by category', () => {
       const transactions = [
-        { amount: 100, category: 'FOOD' },
-        { amount: 50, category: 'FOOD' },
-        { amount: 200, category: 'TRANSPORT' }
+        { amount: 100, category: 'Alimentación' },
+        { amount: 50, category: 'Alimentación' },
+        { amount: 200, category: 'Transporte' }
       ] as any;
       
       const totals = transactionBusinessLogic.getCategoryTotals(transactions);
       expect(totals).toEqual({
-        FOOD: 150,
-        TRANSPORT: 200
+        'Alimentación': 150,
+        'Transporte': 200
       });
     });
   });

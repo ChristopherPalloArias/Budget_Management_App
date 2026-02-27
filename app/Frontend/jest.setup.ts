@@ -97,3 +97,14 @@ jest.mock("@/core/api/HttpClient", () => ({
     clearInstances: jest.fn(),
   },
 }));
+
+// Polyfill for import.meta.env to avoid parse errors in HttpClient.ts
+(globalThis as any).importMetaEnv = {
+  VITE_API_TRANSACTIONS_URL: 'http://localhost:3000/v1/transactions',
+  VITE_API_REPORTS_URL: 'http://localhost:3000/v1/reports',
+  VITE_API_AUTH_URL: 'http://localhost:3000/v1/auth',
+  MODE: 'test',
+  DEV: true,
+  PROD: false,
+  SSR: false,
+};

@@ -75,14 +75,17 @@ describe('reportService', () => {
         const mockBlob = new Blob(['pdf-content'], { type: 'application/pdf' });
         (mockReportsHttpClient.get as jest.Mock).mockResolvedValue({ data: mockBlob });
         
-        // Mock click on link
-        const clickMock = jest.fn();
-        jest.spyOn(document, 'createElement').mockReturnValue({
-            click: clickMock,
-            remove: jest.fn(),
-            href: '',
-            download: '',
-        } as any);
+        // Create a real link element but mock its click method
+        const realLink = document.createElement('a');
+        const clickSpy = jest.spyOn(realLink, 'click').mockImplementation(() => {});
+        
+        // Mock document.createElement to return our spied link
+        const createElementSpy = jest.spyOn(document, 'createElement').mockReturnValue(realLink as any);
+        
+        // Also mock appendChild and removeChild to avoid actual DOM changes if preferred,
+        // but JSDOM handles them fine with real nodes.
+        const appendSpy = jest.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+        const removeSpy = jest.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
 
         await downloadReportPdf('2023-01');
         
@@ -90,7 +93,12 @@ describe('reportService', () => {
             '/v1/reports/pdf?period=2023-01',
             expect.objectContaining({ responseType: 'blob' })
         );
-        expect(clickMock).toHaveBeenCalled();
+        expect(clickSpy).toHaveBeenCalled();
+
+        createElementSpy.mockRestore();
+        clickSpy.mockRestore();
+        appendSpy.mockRestore();
+        removeSpy.mockRestore();
     });
   });
 

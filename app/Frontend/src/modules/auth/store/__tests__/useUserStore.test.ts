@@ -4,7 +4,12 @@ import { act } from '@testing-library/react';
 describe('useUserStore', () => {
   beforeEach(() => {
     act(() => {
-      useUserStore.getState().setUser(null);
+      // Manual reset to initial state
+      useUserStore.setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: true,
+      });
     });
   });
 
@@ -22,9 +27,10 @@ describe('useUserStore', () => {
       useUserStore.getState().setUser(mockUser);
     });
     
-    expect(useUserStore.getState().user).toEqual(mockUser);
-    expect(useUserStore.getState().isAuthenticated).toBe(true);
-    expect(useUserStore.getState().isLoading).toBe(false);
+    const state = useUserStore.getState();
+    expect(state.user).toEqual(mockUser);
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.isLoading).toBe(false);
   });
 
   it('should logout', async () => {
@@ -36,8 +42,9 @@ describe('useUserStore', () => {
       await useUserStore.getState().logout();
     });
     
-    expect(useUserStore.getState().user).toBeNull();
-    expect(useUserStore.getState().isAuthenticated).toBe(false);
-    expect(useUserStore.getState().isLoading).toBe(false);
+    const state = useUserStore.getState();
+    expect(state.user).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.isLoading).toBe(false);
   });
 });

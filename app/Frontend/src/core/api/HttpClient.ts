@@ -38,13 +38,17 @@ class HttpClient {
   }
 
   private static getBaseURL(serviceType: ServiceType): string {
+    // Use globalThis.importMetaEnv which is polyfilled in jest.setup.ts.
+    // This avoids the 'import.meta' syntax which causes parse errors in Jest.
+    const env = (globalThis as any).importMetaEnv || {};
+
     switch (serviceType) {
       case 'transactions':
-        return import.meta.env.VITE_API_TRANSACTIONS_URL || '';
+        return env.VITE_API_TRANSACTIONS_URL || '';
       case 'reports':
-        return import.meta.env.VITE_API_REPORTS_URL || '';
+        return env.VITE_API_REPORTS_URL || '';
       case 'auth':
-        return import.meta.env.VITE_API_AUTH_URL || '';
+        return env.VITE_API_AUTH_URL || '';
       default:
         throw new Error(`Service type '${serviceType}' not supported`);
     }

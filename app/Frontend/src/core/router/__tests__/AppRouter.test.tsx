@@ -1,28 +1,32 @@
 import { render, screen } from '@testing-library/react';
 import { AppRouter } from '../AppRouter';
-import { useUserStore } from '@/modules/auth';
+import { useUserStore } from '@/modules/auth/store/useUserStore';
 
-// Mock useUserStore
-jest.mock('@/modules/auth', () => ({
+// Mock useUserStore directly
+jest.mock('@/modules/auth/store/useUserStore', () => ({
   useUserStore: jest.fn(),
-  ProtectedRoute: ({ children }: any) => <div>ProtectedRoute {children}</div>,
-  PublicRoute: ({ children }: any) => <div>PublicRoute {children}</div>,
 }));
 
-// Mock layout components - fixed paths for src/core/router/__tests__
-jest.mock('../../../shared/layouts/PublicLayout', () => ({
-  PublicLayout: ({ children }: any) => <div>PublicLayout {children}</div>,
+// Mock components used in AppRouter
+jest.mock('@/modules/auth', () => ({
+  ProtectedRoute: ({ children }: any) => <div data-testid="protected-route">ProtectedRoute {children}</div>,
+  PublicRoute: ({ children }: any) => <div data-testid="public-route">PublicRoute {children}</div>,
 }));
-jest.mock('../../../shared/layouts/DashboardLayout', () => ({
-  DashboardLayout: ({ children }: any) => <div>DashboardLayout {children}</div>,
+
+jest.mock('@/shared/layouts/PublicLayout', () => ({
+  PublicLayout: () => <div data-testid="public-layout">PublicLayout</div>,
+}));
+
+jest.mock('@/shared/layouts/DashboardLayout', () => ({
+  DashboardLayout: () => <div data-testid="dashboard-layout">DashboardLayout</div>,
 }));
 
 describe('AppRouter', () => {
   it('should render PublicRoute when not authenticated', () => {
-    (useUserStore as unknown as jest.Mock).mockReturnValue({ user: null });
+    (useUserStore as unknown as jest.Mock).mockReturnValue({ user: null, isLoading: false });
     
     render(<AppRouter />);
     
-    expect(screen.getByText(/PublicRoute/)).toBeDefined();
+    expect(screen.getByTestId('public-route')).toBeDefined();
   });
 });

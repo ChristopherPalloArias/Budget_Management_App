@@ -75,5 +75,10 @@ export const formatNumber = (amount: any): string => {
  * @returns true si es un número válido
  */
 export const isValidNumber = (value: any): boolean => {
-  return !isNaN(toSafeNumber(value)) && isFinite(toSafeNumber(value));
+  if (value === null || value === undefined || value === '') {
+    return false;
+  }
+  
+  const num = Number(value);
+  return !isNaN(num) && isFinite(num);
 };

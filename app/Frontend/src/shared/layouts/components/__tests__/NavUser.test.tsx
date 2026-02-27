@@ -5,7 +5,15 @@ import { useSidebar } from '../../../../components/ui/sidebar';
 
 // Mock hooks - fixed relative paths for src/shared/layouts/components/__tests__
 jest.mock('../../../../modules/auth/store/useUserStore');
-jest.mock('../../../../components/ui/sidebar');
+// Mock sidebar components more comprehensively
+jest.mock('../../../../components/ui/sidebar', () => ({
+  SidebarMenu: ({ children }: any) => <div data-testid="sidebar-menu">{children}</div>,
+  SidebarMenuItem: ({ children }: any) => <div data-testid="sidebar-menu-item">{children}</div>,
+  SidebarMenuButton: ({ children, onClick }: any) => (
+    <button onClick={onClick} data-testid="sidebar-menu-button">{children}</button>
+  ),
+  useSidebar: jest.fn().mockReturnValue({ isMobile: false }),
+}));
 
 // Mock UI components
 jest.mock('../../../../components/ui/dropdown-menu', () => ({

@@ -6,7 +6,21 @@ jest.mock('@/hooks/use-mobile', () => ({
   useIsMobile: jest.fn().mockReturnValue(false)
 }));
 
+// Mock Sheet to always render content in tests
+jest.mock('../sheet', () => ({
+  Sheet: ({ children, open }: any) => <div data-testid="sheet" data-open={open}>{children}</div>,
+  SheetContent: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
+  SheetDescription: ({ children }: any) => <div>{children}</div>,
+}));
+
 describe('Sidebar', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    document.cookie = 'sidebar_state=; Max-Age=0';
+  });
+
   it('should render and toggle', () => {
     render(
       <SidebarProvider>
@@ -30,8 +44,6 @@ describe('Sidebar', () => {
     const trigger = screen.getByRole('button', { name: /toggle sidebar/i });
     fireEvent.click(trigger);
     
-    // Check if state changed (data-state on the wrapper or sidebar)
-    // The SidebarProvider sets a cookie and changes internal state
     expect(document.cookie).toContain('sidebar_state=false');
   });
 
@@ -46,8 +58,8 @@ describe('Sidebar', () => {
       </SidebarProvider>
     );
 
-    // In mobile, it should render a Sheet (which we might need to mock or just check for its existence)
     // The Sheet title is "Sidebar" with sr-only
-    expect(screen.getByText('Sidebar')).toBeDefined();
+    // Check for "Sidebar" text in a way that handles the mock correctly
+    expect(screen.queryByText('Sidebar')).toBeTruthy();
   });
 });
