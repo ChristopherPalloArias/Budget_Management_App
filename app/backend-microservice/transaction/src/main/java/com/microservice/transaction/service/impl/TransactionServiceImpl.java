@@ -21,6 +21,8 @@ import com.microservice.transaction.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 
 /**
  * Implementación del servicio de transacciones con aislamiento de datos.
@@ -70,9 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction existing = transactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
 
-        // Validar que la transacción pertenece al usuario autenticado
         validateTransactionOwnership(userId, existing, id);
-
         applyUpdates(existing, dto, userId);
 
         Transaction saved = transactionRepository.save(existing);
@@ -80,7 +80,35 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionMapper.toResponse(saved);
     }
 
-    // ...existing code...
+    /**
+     * Valida que el monto sea positivo.
+     *
+     * @param amount monto a validar
+     * @throws ValidationException si el monto es menor o igual a cero
+     */
+    private void validateAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount must be greater than zero");
+        }
+    }
+
+    /**
+     * Aplica actualizaciones a una transacción existente.
+     * Actualiza solo los campos mutables, preservando id y campos de auditoría.
+     *
+     * @param transaction transacción a actualizar
+     * @param dto nuevos datos de la transacción
+     * @param userId ID del usuario autenticado (del token, no del DTO)
+     */
+    private void applyUpdates(Transaction transaction, TransactionRequest dto, String userId) {
+        transaction.setType(dto.type());
+        transaction.setAmount(dto.amount());
+        transaction.setCategory(dto.category());
+        transaction.setDate(dto.date());
+        transaction.setDescription(dto.description());
+        // El userId SIEMPRE viene del token, NUNCA del DTO
+        transaction.setUserId(userId);
+    }
 
     /**
      * Busca una transacción por su ID, validando que pertenece al usuario autenticado.
@@ -95,17 +123,61 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction found = transactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
         
-        // Si la transacción no pertenece al usuario, lanzar excepción
         validateTransactionOwnership(userId, found, id);
         
         return TransactionMapper.toResponse(found);
     }
 
-    // ...existing code...
+    /**
+     * Lista todas las transacciones del usuario autenticado (paginadas).
+     *
+     * @param userId ID del usuario autenticado
+     * @param pageable parámetros de paginación y ordering
+     * @return respuesta paginada con transacciones del usuario
+     */
+    @Override
+    public PaginatedResponse<TransactionResponse> getAll(String userId, Pageable pageable) {
+        Page<Transaction> page = transactionRepository.findByUserIdOrderByDateDesc(userId, pageable);
+        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
+
+        return new PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast());
+    }
+
+    /**
+     * Lista todas las transacciones del usuario filtradas por periodo (yyyy-MM).
+     *
+     * @param userId ID del usuario autenticado
+     * @param period período en formato yyyy-MM
+     * @param pageable parámetros de paginación y ordering
+     * @return respuesta paginada con transacciones del período
+     */
+    @Override
+    public PaginatedResponse<TransactionResponse> getByPeriod(String userId, String period, Pageable pageable) {
+        YearMonth yearMonth = YearMonth.parse(period);
+        LocalDate start = yearMonth.atDay(1);
+        LocalDate end = yearMonth.atEndOfMonth();
+
+        Page<Transaction> page = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(userId, start, end, pageable);
+        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
+
+        return new PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast());
+    }
 
     /**
      * Valida que una transacción pertenece al usuario autenticado.
-     * Lanza una excepción si no es así (para mantener concepto de no divulgar IDs de otros usuarios).
+     * Lanza una excepción si no es así (para no divulgar IDs de otros usuarios).
      *
      * @param userId ID del usuario autenticado
      * @param transaction entidad a validar
@@ -123,7 +195,6 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction existing = transactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
 
-        // Validar que la transacción pertenece al usuario autenticado
         validateTransactionOwnership(userId, existing, id);
 
         transactionRepository.delete(existing);
