@@ -34,6 +34,7 @@ rabbitmq:
     transaction-exchange: transaction-exchange
     transaction-created: transaction.created.queue
     transaction-updated: transaction.updated.queue
+    transaction-deleted: transaction.deleted.queue
 
 app:
   cors:

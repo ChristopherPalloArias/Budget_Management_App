@@ -144,7 +144,7 @@ class ReportControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/reports/recalculate returns 200 OK with recalculated report")
+    @DisplayName("PUT /api/v1/reports/recalculate returns 200 OK with recalculated report")
     void recalculateReport_ShouldReturnOk_WhenSuccessful() throws Exception {
         String period = "2024-03";
         ReportResponse mockResponse = new ReportResponse(
@@ -155,7 +155,7 @@ class ReportControllerTest {
         when(reportCommandService.recalculateReport(eq(userId), eq(period), any()))
                 .thenReturn(mockResponse);
 
-        mockMvc.perform(post("/api/v1/reports/recalculate")
+        mockMvc.perform(put("/api/v1/reports/recalculate")
                 .principal(mockPrincipal)
                 .header(HttpHeaders.AUTHORIZATION, mockToken)
                 .contentType(MediaType.APPLICATION_JSON)
