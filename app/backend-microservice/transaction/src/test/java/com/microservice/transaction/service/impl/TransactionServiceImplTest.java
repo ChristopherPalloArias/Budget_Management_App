@@ -285,5 +285,4 @@ class TransactionServiceImplTest {
         verify(transactionRepository, never()).delete(any());
         verify(eventPublisher, never()).publishDeleted(any());
     }
-    }
 }
