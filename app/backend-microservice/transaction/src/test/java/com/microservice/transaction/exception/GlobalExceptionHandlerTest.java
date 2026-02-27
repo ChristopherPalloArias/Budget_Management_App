@@ -15,7 +15,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,9 +56,9 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(errorMessage, response.getBody().message());
-        assertEquals("/api/v1/transactions/123", response.getBody().path());
-        assertNotNull(response.getBody().dateTime());
+        assertEquals(errorMessage, response.getBody().getMessage());
+        assertEquals("/api/v1/transactions/123", response.getBody().getPath());
+        assertNotNull(response.getBody().getDateTime());
     }
 
     @Test
@@ -77,8 +76,8 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(errorMessage, response.getBody().message());
-        assertEquals("/api/v1/transactions", response.getBody().path());
+        assertEquals(errorMessage, response.getBody().getMessage());
+        assertEquals("/api/v1/transactions", response.getBody().getPath());
     }
 
     @Test
@@ -87,7 +86,7 @@ class GlobalExceptionHandlerTest {
         // Given
         BindingResult bindingResult = mock(BindingResult.class);
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
-                mock(org.springframework.web.method.annotation.MethodArgumentNotValidException.class),
+                mock(org.springframework.core.MethodParameter.class),
                 bindingResult
         );
         
@@ -105,13 +104,13 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         
-        String message = response.getBody().message();
+        String message = response.getBody().getMessage();
         assertTrue(message.contains("Validation failed:"), "Message should contain 'Validation failed:'");
         assertTrue(message.contains("amount") && message.contains("must be greater than zero"),
                 "Message should contain field name and error message for amount");
         assertTrue(message.contains("type") && message.contains("must not be null"),
                 "Message should contain field name and error message for type");
-        assertEquals("/api/v1/transactions", response.getBody().path());
+        assertEquals("/api/v1/transactions", response.getBody().getPath());
     }
 
     @Test
@@ -139,12 +138,12 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         
-        String message = response.getBody().message();
+        String message = response.getBody().getMessage();
         assertTrue(message.contains("Constraint validation failed:"),
                 "Message should contain 'Constraint validation failed:'");
         assertTrue(message.contains("amount") && message.contains("must be greater than 0"),
                 "Message should contain property path and violation message");
-        assertEquals("/api/v1/transactions", response.getBody().path());
+        assertEquals("/api/v1/transactions", response.getBody().getPath());
     }
 
     @Test
@@ -174,7 +173,7 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
         
-        String message = response.getBody().message();
+        String message = response.getBody().getMessage();
         assertTrue(message.contains("Constraint validation failed:"),
                 "Message should contain 'Constraint validation failed:'");
         assertTrue(message.contains("amount") && message.contains("must be greater than 0"));
@@ -195,7 +194,7 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Unexpected error", response.getBody().message());
+        assertEquals("Unexpected error", response.getBody().getMessage());
     }
 
     /**
