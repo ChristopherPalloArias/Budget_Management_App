@@ -6,7 +6,6 @@ import { ProtectedRoute, PublicRoute } from "../../modules/auth";
 
 const LoginPage = lazy(() => import("../../modules/auth/pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("../../modules/auth/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
-const HomePage = lazy(() => import("../../modules/home/pages/HomePage").then(m => ({ default: m.HomePage })));
 const TransactionPage = lazy(() => import("../../modules/transactions/pages/TransactionPage").then(m => ({ default: m.TransactionPage })));
 const ReportsPage = lazy(() => import("../../modules/reports/pages/ReportsPage").then(m => ({ default: m.ReportsPage })));
 
@@ -23,7 +22,7 @@ export const AppRouter = () => {
         <Routes>
           <Route element={<PublicRoute />}>
             <Route element={<PublicLayout />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
             </Route>

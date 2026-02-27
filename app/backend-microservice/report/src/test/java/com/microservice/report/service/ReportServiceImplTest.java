@@ -3,7 +3,9 @@ package com.microservice.report.service;
 import com.microservice.report.exception.ReportNotFoundException;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
-import com.microservice.report.service.impl.ReportServiceImpl;
+import com.microservice.report.service.impl.ReportCommandServiceImpl;
+import com.microservice.report.service.TransactionClient;
+import com.microservice.report.repository.ProcessedMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
@@ -26,8 +29,14 @@ class ReportServiceImplTest {
     @Mock
     private ReportRepository reportRepository;
 
+    @Mock
+    private TransactionClient transactionClient;
+
+    @Mock
+    private ProcessedMessageRepository processedMessageRepository;
+
     @InjectMocks
-    private ReportServiceImpl reportService;
+    private ReportCommandServiceImpl reportCommandService;
 
     private String userId;
     private String period;
@@ -51,7 +60,7 @@ class ReportServiceImplTest {
                 .thenReturn(Optional.of(mockReport));
 
         // WHEN: Se ejecuta la eliminación (Falla aquí: el método no existe aún)
-        reportService.deleteReport(userId, period);
+        reportCommandService.deleteReport(userId, period);
 
         // THEN: Se valida que se buscó y eliminó correctamente en el repositorio
         verify(reportRepository, times(1)).findByUserIdAndPeriod(userId, period);
@@ -67,7 +76,7 @@ class ReportServiceImplTest {
 
         // WHEN & THEN: Se espera que lance ReportNotFoundException
         assertThrows(ReportNotFoundException.class, () -> {
-            reportService.deleteReport(userId, period);
+            reportCommandService.deleteReport(userId, period);
         });
 
         // Validar que NO se intentó eliminar nada

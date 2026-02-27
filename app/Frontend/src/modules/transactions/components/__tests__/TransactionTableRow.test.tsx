@@ -21,7 +21,23 @@ jest.mock("@/core/constants/categories.constants", () => ({
   getCategoryLabel: jest.fn((category: string) => category),
 }));
 
+jest.mock("../TransactionModalsProvider", () => ({
+  useTransactionModals: jest.fn(() => ({
+    openCreateModal: jest.fn(),
+    openEditModal: jest.fn(),
+    openDeleteModal: jest.fn(),
+  })),
+}));
+
 describe("TransactionTableRow", () => {
+  const mockOnEdit = jest.fn();
+  const mockOnDelete = jest.fn();
+
+  beforeEach(() => {
+    mockOnEdit.mockClear();
+    mockOnDelete.mockClear();
+  });
+
   const mockIncomeTransaction: TransactionModel = {
     id: 1,
     userId: "user1",

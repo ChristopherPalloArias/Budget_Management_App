@@ -1,7 +1,7 @@
 export interface ReportResponse {
     balance: number;
     totalIncome: number;
-    totalExpenses: number;
+    totalExpense: number; // Fixed property mapping from plural to singular to match BE
     savings: number;
     reports: ReportItemResponse[];
 }
@@ -12,7 +12,7 @@ export interface ReportItemResponse {
     period: string;
     balance: number;
     totalIncome: number;
-    totalExpenses: number;
+    totalExpense: number; // Matches BE 'totalExpense'
     savings: number;
     createdAt: string;
     updatedAt: string;
@@ -46,7 +46,6 @@ export interface ReportFilters {
 
 // Recalculate Report Types
 export interface RecalculateReportRequest {
-    userId: string;
     period: string;
 }
 

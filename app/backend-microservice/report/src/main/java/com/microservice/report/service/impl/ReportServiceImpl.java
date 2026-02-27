@@ -23,6 +23,15 @@ import com.microservice.report.infrastructure.dto.TransactionType;
 import com.microservice.report.model.Report;
 import com.microservice.report.repository.ReportRepository;
 import com.microservice.report.service.ReportService;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Implementación principal del servicio de reportes financieros.
@@ -355,28 +364,84 @@ public class ReportServiceImpl implements ReportService {
     private record AccumulatedTotals(BigDecimal totalIncome, BigDecimal totalExpense) {
     }
 
+    private final RestTemplate restTemplate;
+
     /**
      * Recalcula el reporte financiero para un usuario y período específico.
      * 
-     * <p>Este método recalcula los totales de ingresos, gastos y balance
-     * para un reporte existente. El recálculo se basa en las transacciones
-     * actuales del período.</p>
-     *
-     * @param userId identificador del usuario propietario del reporte
-     * @param period período en formato "yyyy-MM" (ejemplo: "2025-11")
-     * @return reporte recalculado con totales actualizados
-     * @throws ReportNotFoundException si el reporte no existe para el período
+     * <p>Busca transacciones reales en el microservicio de transacciones y
+     * actualiza los totales del reporte. Si el reporte no existe, lo crea.</p>
      */
     @Transactional
     @Override
     public ReportResponse recalculateReport(String userId, String period) {
-        Report report = findReportOrThrow(userId, period);
+        validateUserId(userId);
+        validatePeriod(period);
+        // 1. Obtener el reporte o crearlo si no existe (con valores en cero)
+        Report report = reportRepository.findByUserIdAndPeriod(userId, period)
+                .orElseThrow(() -> new ReportNotFoundException(userId, period));
         
-        // Persistir cambios (en implementación completa, aquí se recalcularían valores reales)
-        Report savedReport = reportRepository.save(report);
+        // 2. Consultar transacciones del microservicio (usando comunicación inter-service)
+        String jwt = getJwtFromContext();
+        String url = "http://transaction:8081/api/v1/transactions?period=" + period + "&size=1000";
+        
+        HttpHeaders headers = new HttpHeaders();
+        if (jwt != null) {
+            headers.set("Authorization", "Bearer " + jwt);
+        }
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        return ReportMapper.toResponse(savedReport);
+        try {
+            ResponseEntity<PaginatedTransactionResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<PaginatedTransactionResponse>() {}
+            );
+
+            // 3. Procesar y sumar transacciones
+            BigDecimal totalIncome = BigDecimal.ZERO;
+            BigDecimal totalExpense = BigDecimal.ZERO;
+            
+            if (response.getBody() != null && response.getBody().content() != null) {
+                for (TransactionData tx : response.getBody().content()) {
+                    if ("INCOME".equals(tx.type())) {
+                        totalIncome = totalIncome.add(tx.amount());
+                    } else if ("EXPENSE".equals(tx.type())) {
+                        totalExpense = totalExpense.add(tx.amount());
+                    }
+                }
+            }
+
+            // 4. Actualizar estado del reporte
+            report.setTotalIncome(totalIncome);
+            report.setTotalExpense(totalExpense);
+            report.setBalance(totalIncome.subtract(totalExpense));
+            
+            Report savedReport = reportRepository.save(report);
+            return ReportMapper.toResponse(savedReport);
+            
+        } catch (Exception e) {
+            // Log error and propagate or handle
+            throw new RuntimeException("Error al conectar con el microservicio de transacciones: " + e.getMessage(), e);
+        }
     }
+
+    private String getJwtFromContext() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                return authHeader.substring(7);
+            }
+        }
+        return null;
+    }
+
+    // DTOs auxiliares para el consumo del microservicio de transacciones
+    record PaginatedTransactionResponse(List<TransactionData> content) {}
+    record TransactionData(String type, BigDecimal amount) {}
 
     /**
      * Busca un reporte por usuario y período, lanzando excepción si no existe.

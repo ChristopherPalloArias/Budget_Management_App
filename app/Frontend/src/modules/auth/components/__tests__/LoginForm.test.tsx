@@ -18,16 +18,13 @@ jest.mock("../../hooks/useLoginForm");
 describe("LoginForm Component", () => {
   // Mock hook data
   const mockLogin = jest.fn();
-  const mockLoginWithGoogleProvider = jest.fn();
 
   const defaultHookReturn = {
     state: {
       isLoading: false,
-      isGoogleLoading: false,
       error: null,
     },
     login: mockLogin,
-    loginWithGoogleProvider: mockLoginWithGoogleProvider,
     clearError: jest.fn(),
   };
 
@@ -42,18 +39,15 @@ describe("LoginForm Component", () => {
       render(<LoginForm />);
 
       // Act & Assert: Verificar que los elementos se renderizan
-      const titles = screen.getAllByText("Iniciar Sesión");
+      const titles = screen.getAllByText((content) => content.includes("Bienvenido de nuevo"));
       expect(titles.length).toBeGreaterThan(0);
       expect(
-        screen.getByText("Ingresa tus credenciales para acceder a tu cuenta"),
+        screen.getByText((content) => content.includes("Ingresa tus credenciales para acceder a tu cuenta")),
       ).toBeInTheDocument();
       expect(screen.getByLabelText("Correo Electrónico")).toBeInTheDocument();
       expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /iniciar sesión/i }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /google/i }),
       ).toBeInTheDocument();
     });
 
@@ -222,93 +216,8 @@ describe("LoginForm Component", () => {
     });
   });
 
-  describe("Inicio de sesión con Google", () => {
-    it("debe llamar a loginWithGoogleProvider cuando se hace clic en el botón de Google", async () => {
-      // Arrange
-      const user = userEvent.setup();
-      render(<LoginForm />);
-
-      // Act: Hacer clic en el botón de Google
-      const googleButton = screen.getByRole("button", { name: /google/i });
-      await user.click(googleButton);
-
-      // Assert: Verificar que se llamó a la función correcta
-      expect(mockLoginWithGoogleProvider).toHaveBeenCalledTimes(1);
-    });
-
-    it("debe deshabilitar el botón de Google durante la autenticación de Google", () => {
-      // Arrange
-      (useLoginForm as jest.Mock).mockReturnValue({
-        ...defaultHookReturn,
-        state: { ...defaultHookReturn.state, isGoogleLoading: true },
-      });
-
-      render(<LoginForm />);
-
-      // Act & Assert
-      const googleButton = screen.getByRole("button", { name: /conectando/i });
-      expect(googleButton).toBeDisabled();
-    });
-
-    it("debe mostrar texto de carga en el botón de Google durante la autenticación", () => {
-      // Arrange
-      (useLoginForm as jest.Mock).mockReturnValue({
-        ...defaultHookReturn,
-        state: { ...defaultHookReturn.state, isGoogleLoading: true },
-      });
-
-      render(<LoginForm />);
-
-      // Act & Assert
-      expect(screen.getByText("Conectando...")).toBeInTheDocument();
-    });
-
-    it("debe deshabilitar todos los controles cuando está cargando Google", () => {
-      // Arrange
-      (useLoginForm as jest.Mock).mockReturnValue({
-        ...defaultHookReturn,
-        state: { ...defaultHookReturn.state, isGoogleLoading: true },
-      });
-
-      render(<LoginForm />);
-
-      // Act & Assert
-      const emailInput = screen.getByLabelText("Correo Electrónico");
-      const passwordInput = screen.getByLabelText("Contraseña");
-      const submitButton = screen.getByRole("button", {
-        name: /iniciar sesión/i,
-      });
-      const googleButton = screen.getByRole("button", { name: /conectando/i });
-
-      expect(emailInput).toBeDisabled();
-      expect(passwordInput).toBeDisabled();
-      expect(submitButton).toBeDisabled();
-      expect(googleButton).toBeDisabled();
-    });
-  });
-
   describe("Manejo de errores", () => {
-    it("debe mostrar mensaje de error cuando hay un error de autenticación", () => {
-      // Arrange: Configurar error en el estado
-      const errorMessage = "Credenciales inválidas";
-      (useLoginForm as jest.Mock).mockReturnValue({
-        ...defaultHookReturn,
-        state: { ...defaultHookReturn.state, error: errorMessage },
-      });
-
-      render(<LoginForm />);
-
-      // Act & Assert: Verificar que se muestra el error
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
-      const errorDiv = screen.getByText(errorMessage).closest("div");
-      expect(errorDiv).toHaveClass(
-        "bg-red-50",
-        "border-red-200",
-        "text-red-800",
-      );
-    });
-
-    it("no debe mostrar el mensaje de error cuando error es null", () => {
+    it("no debe mostrar el mensaje de error manual ya que ahora se usa toast", () => {
       // Arrange
       render(<LoginForm />);
 

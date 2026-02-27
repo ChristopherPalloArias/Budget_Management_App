@@ -4,10 +4,17 @@ import com.microservice.transaction.model.Transaction;
 
 import java.util.List;
 
+/**
+ * Mapper entre DTOs y entidades Transaction.
+ * 
+ * Nota: El método toRequest ahora recibe separadamente el userId
+ * (extraído del token JWT) para garantizar that el DTO no pueda
+ * especificar un userId diferente.
+ */
 public class TransactionMapper {
-    public static Transaction toRequest(TransactionRequest dto) {
+    public static Transaction toRequest(String userId, TransactionRequest dto) {
         Transaction entity = new Transaction();
-        entity.setUserId(dto.userId());
+        entity.setUserId(userId);
         entity.setType(dto.type());
         entity.setAmount(dto.amount());
         entity.setCategory(dto.category());

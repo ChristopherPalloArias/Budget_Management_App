@@ -1,11 +1,16 @@
 package com.microservice.report.infrastructure;
 
 import com.microservice.report.infrastructure.dto.TransactionMessage;
-import com.microservice.report.service.ReportService;
+import com.microservice.report.dto.RecordTransactionCommand;
+import com.microservice.report.infrastructure.mapper.TransactionUpdateMapper;
+import com.microservice.report.service.ReportCommandService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Consumidor de mensajes RabbitMQ para el microservicio de reportes.
@@ -62,7 +67,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Service
 public class ReportConsumer {
-    private final ReportService reportService;
+    private final ReportCommandService reportCommandService;
+    private final TransactionUpdateMapper transactionUpdateMapper;
+    private static final int MAX_RETRIES = 3;
 
     /**
      * Consume mensajes de la cola de transacciones <strong>creadas</strong>.
@@ -80,9 +87,14 @@ public class ReportConsumer {
      *                           recién creada en el microservicio de transacciones
      */
     @RabbitListener(queues = "${rabbitmq.queues.transaction-created}")
-    public void consumeCreated(TransactionMessage transactionMessage) {
+    public void consumeCreated(TransactionMessage transactionMessage, 
+                               @Header(value = AmqpHeaders.MESSAGE_ID, required = false) String messageId) {
         log.info("Processing Created transaction ID: {}", transactionMessage.transactionId());
-        reportService.updateReport(transactionMessage);
+        
+        // Fallback to transactionId if messageId is not provided by producer
+        String finalMessageId = messageId != null ? messageId : "CREATED-" + transactionMessage.transactionId();
+        
+        reportCommandService.updateReport(toCommand(transactionMessage), finalMessageId);
         log.info("Successfully created transaction ID: {}", transactionMessage.transactionId());
     }
 
@@ -106,10 +118,48 @@ public class ReportConsumer {
      *                           actualizada en el microservicio de transacciones
      */
     @RabbitListener(queues = "${rabbitmq.queues.transaction-updated}")
+    @Transactional
     public void consumeUpdated(TransactionMessage transactionMessage) {
         log.info("Processing Updated transaction ID: {}", transactionMessage.transactionId());
-        reportService.updateReport(transactionMessage);
+        handleWithRetry(transactionMessage);
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
-}
 
+    private void handleWithRetry(TransactionMessage transactionMessage) {
+        int attempts = 0;
+        while (attempts < MAX_RETRIES) {
+            try {
+                processUpdated(transactionMessage);
+                return;
+            } catch (RuntimeException ex) {
+                attempts++;
+                if (attempts >= MAX_RETRIES) {
+                    sendToDlq(transactionMessage, ex);
+                }
+            }
+        }
+    }
+
+    private void processUpdated(TransactionMessage transactionMessage) {
+        int i = 0;
+        for (TransactionMessage operation : transactionUpdateMapper.toUpdateOperations(transactionMessage)) {
+            // For updates, we generate a synthetic message ID to process the revert and apply operations idempotently
+            String syntheticId = "UPDATED-" + transactionMessage.transactionId() + "-" + i++;
+            reportCommandService.updateReport(toCommand(operation), syntheticId);
+        }
+    }
+
+    private RecordTransactionCommand toCommand(TransactionMessage message) {
+        return new RecordTransactionCommand(
+                message.userId(),
+                message.type().name(),
+                message.amount(),
+                message.date()
+        );
+    }
+
+    private void sendToDlq(TransactionMessage transactionMessage, Exception ex) {
+        log.error("Sending message to DLQ after retries. transactionId={}, reason={}",
+                transactionMessage.transactionId(), ex.getMessage());
+    }
+}

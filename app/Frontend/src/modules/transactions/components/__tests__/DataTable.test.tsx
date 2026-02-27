@@ -27,6 +27,16 @@ jest.mock("@/core/constants/categories.constants", () => ({
   getCategoryLabel: jest.fn((category: string) => category),
 }));
 
+const mockOpenCreateModal = jest.fn();
+
+jest.mock("../TransactionModalsProvider", () => ({
+  useTransactionModals: () => ({
+    openCreateModal: mockOpenCreateModal,
+    openEditModal: jest.fn(),
+    openDeleteModal: jest.fn(),
+  }),
+}));
+
 import { useDataTableLogic } from "@/shared/hooks/useDataTableLogic";
 
 const mockUseDataTableLogic = useDataTableLogic as jest.MockedFunction<
@@ -64,8 +74,6 @@ describe("DataTable", () => {
     },
   ];
 
-  const mockOnCreateTransaction = jest.fn();
-
   const defaultHookReturn = {
     state: {
       pageIndex: 0,
@@ -96,10 +104,7 @@ describe("DataTable", () => {
     it("debe renderizar el título y descripción del listado", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -112,10 +117,7 @@ describe("DataTable", () => {
     it("debe renderizar la barra de herramientas", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -129,10 +131,7 @@ describe("DataTable", () => {
     it("debe renderizar los encabezados de la tabla", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -148,10 +147,7 @@ describe("DataTable", () => {
     it("debe renderizar las transacciones con sus respectivos tipos", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -165,10 +161,7 @@ describe("DataTable", () => {
     it("debe renderizar el texto con la cantidad de transacciones encontradas", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -189,7 +182,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable data={[]} onCreateTransaction={mockOnCreateTransaction} />,
+        <DataTable data={[]} />,
       );
 
       // Assert
@@ -219,10 +212,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -254,10 +244,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -284,10 +271,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -314,10 +298,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -346,10 +327,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -363,10 +341,7 @@ describe("DataTable", () => {
       // Arrange
       const user = userEvent.setup();
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Act
@@ -375,8 +350,7 @@ describe("DataTable", () => {
       });
       await user.click(createButton);
 
-      // Assert
-      expect(mockOnCreateTransaction).toHaveBeenCalledTimes(1);
+      expect(mockOpenCreateModal).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -402,10 +376,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={manyTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={manyTransactions} />,
       );
 
       // Assert
@@ -429,10 +400,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -448,10 +416,7 @@ describe("DataTable", () => {
     it("debe inicializar el hook con los parámetros correctos", () => {
       // Arrange & Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -471,10 +436,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={mockTransactions}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={mockTransactions} />,
       );
 
       // Assert
@@ -503,10 +465,7 @@ describe("DataTable", () => {
 
       // Act
       render(
-        <DataTable
-          data={[longDescriptionTransaction]}
-          onCreateTransaction={mockOnCreateTransaction}
-        />,
+        <DataTable data={[longDescriptionTransaction]} />,
       );
 
       // Assert

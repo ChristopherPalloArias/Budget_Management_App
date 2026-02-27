@@ -1,5 +1,6 @@
 import { authRepository } from '@/core/config/dependencies';
 import type { IAuthUser } from '@/core/auth/interfaces/IAuthRepository';
+import { useUserStore } from '../store/useUserStore';
 
 /**
  * Login with Email and Password
@@ -11,6 +12,7 @@ export const loginWithEmail = async (
     try {
         const user = await authRepository.signIn({ email, password });
         console.log('[Auth Service] Login successful:', user.email);
+        useUserStore.getState().setUser(user);
         return user;
     } catch (error: any) {
         console.error('[Auth Service] Login error:', error);
@@ -18,19 +20,6 @@ export const loginWithEmail = async (
     }
 };
 
-/**
- * Login with Google
- */
-export const loginWithGoogle = async (): Promise<IAuthUser> => {
-    try {
-        const user = await authRepository.signInWithProvider('GOOGLE');
-        console.log('[Auth Service] Google login successful:', user.email);
-        return user;
-    } catch (error: any) {
-        console.error('[Auth Service] Google login error:', error);
-        throw error;
-    }
-};
 
 /**
  * Register with Email and Password
@@ -47,6 +36,7 @@ export const registerWithEmail = async (
             password,
         });
         console.log('[Auth Service] Registration successful:', user.email);
+        // El usuario debe iniciar sesión manualmente para obtener el token
         return user;
     } catch (error: any) {
         console.error('[Auth Service] Registration error:', error);
@@ -55,11 +45,12 @@ export const registerWithEmail = async (
 };
 
 /**
- * Logout
+ * Logout — delegates to the store's logout which orchestrates
+ * full cleanup of auth state, Zustand stores, and React Query cache.
  */
 export const logout = async (): Promise<void> => {
     try {
-        await authRepository.signOut();
+        await useUserStore.getState().logout();
         console.log('[Auth Service] Logout successful');
     } catch (error: any) {
         console.error('[Auth Service] Logout error:', error);

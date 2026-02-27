@@ -6,10 +6,10 @@ import com.microservice.transaction.dto.PaginatedResponse;
 import com.microservice.transaction.dto.TransactionMapper;
 import com.microservice.transaction.dto.TransactionRequest;
 import com.microservice.transaction.dto.TransactionResponse;
-import com.microservice.transaction.event.TransactionCreatedEvent;
-import com.microservice.transaction.exception.EntityNotFoundException;
+import com.microservice.transaction.exception.NotFoundException;
+import com.microservice.transaction.exception.ValidationException;
+import com.microservice.transaction.service.port.TransactionEventPublisherPort;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,118 +20,105 @@ import com.microservice.transaction.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
- * Implementación principal del servicio de transacciones financieras.
+ * Implementación del servicio de transacciones con aislamiento de datos.
  *
- * <p>Esta clase es el <strong>punto de entrada</strong> de la cadena Event-Driven
- * del sistema. Cuando se crea una nueva transacción, esta clase orquesta tres
- * operaciones en secuencia:</p>
+ * <p>Esta clase garantiza que cada usuario solo puede acceder a sus propias
+ * transacciones mediante validación en cada operación CRUD. El userId se
+ * extrae del token JWT en el controlador y se pasa explícitamente a cada
+ * método del servicio.</p>
+ *
+ * <h3>Flujo de Seguridad</h3>
  * <ol>
- *   <li>Mapeo del DTO de entrada a la entidad JPA vía {@link TransactionMapper}.</li>
- *   <li>Persistencia de la transacción en MySQL.</li>
- *   <li>Publicación de un {@link TransactionCreatedEvent} a través del
- *       {@link ApplicationEventPublisher} de Spring.</li>
+ *   <li>JwtAuthenticationFilter valida el token y establece el SecurityContext</li>
+ *   <li>TransactionController extrae el userId de Principal</li>
+ *   <li>TransactionServiceImpl recibe el userId y lo utiliza para:
+ *       <ul>
+ *         <li>Inyectar automáticamente en nuevas transacciones</li>
+ *         <li>Validar que las transacciones existentes pertenecen al usuario</li>
+ *         <li>Filtrar listas por userId</li>
+ *       </ul>
+ *   </li>
  * </ol>
  *
- * <h3>Rol en la Arquitectura Event-Driven</h3>
- * <p>Esta clase actúa como el <strong>productor originario</strong> de la cadena:</p>
- * <pre>
- *   <strong>TransactionServiceImpl.create()</strong> (publica ApplicationEvent)
- *     → TransactionEventListener (intercepta @Async)
- *       → TransactionMessageProducer (envía a RabbitMQ)
- *         → ReportConsumer (consume)
- *           → ReportServiceImpl.updateReport() (agrega datos)
- * </pre>
- *
- * <p><strong>Desacoplamiento clave:</strong> Esta clase NO conoce RabbitMQ. Solo
- * publica un evento Spring interno ({@link TransactionCreatedEvent}), que es
- * interceptado asíncronamente por {@code TransactionEventListener} en un hilo
- * separado. Esto mantiene el servicio desacoplado del broker de mensajería.</p>
- *
- * <h3>Deuda Técnica Identificada</h3>
- * <ul>
- *   <li><strong>DT-DOC-04:</strong> El método {@code create()} no tiene
- *       {@code @Transactional}. Si {@code save()} ocurre pero el evento falla
- *       antes de publicarse (error en la misma transacción), NO hay rollback
- *       automático. Sin embargo, dado que el evento es {@code @Async}, esta
- *       omisión es menos crítica ya que el evento se procesa en otro hilo.</li>
- *   <li><strong>DT-DOC-05:</strong> Faltan operaciones {@code update()} y
- *       {@code delete()} — la interfaz {@link TransactionService} solo define
- *       {@code create}, {@code getById} y {@code getAll}. Esto limita la
- *       funcionalidad CRUD completa del microservicio.</li>
- *   <li><strong>DT-DOC-06:</strong> El método {@code getById()} lanza
- *       {@link EntityNotFoundException} con un mensaje genérico hardcodeado
- *       {@code "Transaction not found"}. Debería incluir el ID buscado para
- *       facilitar el debugging.</li>
- * </ul>
- *
- * @see TransactionService         Contrato (interfaz) que esta clase implementa
- * @see TransactionCreatedEvent    Evento Spring publicado tras crear una transacción
- * @see TransactionMapper          Utilidad de mapeo entre DTOs y entidades
+ * @see TransactionService
+ * @see JwtAuthenticationFilter
  */
 @RequiredArgsConstructor
 @Service
 public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final TransactionEventPublisherPort eventPublisher;
 
-    /**
-     * Crea una nueva transacción financiera, la persiste y dispara el evento
-     * que inicia la cadena Event-Driven hacia el microservicio de reportes.
-     *
-     * <h4>Flujo de ejecución:</h4>
-     * <ol>
-     *   <li>Convierte {@link TransactionRequest} → {@link Transaction} vía
-     *       {@link TransactionMapper#toRequest}.</li>
-     *   <li>Persiste la entidad en la base de datos MySQL
-     *       ({@code transactionRepository.save()}).</li>
-     *   <li>Publica {@link TransactionCreatedEvent} con la entidad persistida.
-     *       Este evento es capturado asíncronamente por
-     *       {@code TransactionEventListener}, que a su vez delega al
-     *       {@code TransactionMessageProducer} para enviar el mensaje a RabbitMQ.</li>
-     *   <li>Retorna la entidad mapeada a {@link TransactionResponse}.</li>
-     * </ol>
-     *
-     * @param dto datos de la transacción validados desde el controller
-     *            (validación Bean ocurre en {@code @Valid} del controller)
-     * @return respuesta con los datos de la transacción creada, incluyendo el ID generado
-     */
     @Override
-    public TransactionResponse create(TransactionRequest dto) {
-        Transaction entity = TransactionMapper.toRequest(dto);
+    public TransactionResponse create(String userId, TransactionRequest dto) {
+        validateAmount(dto.amount());
+        
+        Transaction entity = TransactionMapper.toRequest(userId, dto);
+        
         Transaction saved = transactionRepository.save(entity);
-        eventPublisher.publishEvent(new TransactionCreatedEvent(this, saved));
+        eventPublisher.publishCreated(saved);
         return TransactionMapper.toResponse(saved);
     }
 
-    /**
-     * Busca una transacción por su identificador único.
-     *
-     * @param id identificador de la transacción (PK auto-generado)
-     * @return respuesta con los datos de la transacción encontrada
-     * @throws EntityNotFoundException si no existe una transacción con el ID proporcionado
-     */
     @Override
-    public TransactionResponse getById(Long id) {
-        Transaction found = transactionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
-        return TransactionMapper.toResponse(found);
+    public TransactionResponse updateTransaction(String userId, Long id, TransactionRequest dto) {
+        validateAmount(dto.amount());
+
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        // Validar que la transacción pertenece al usuario autenticado
+        validateTransactionOwnership(userId, existing);
+
+        applyUpdates(existing, dto, userId);
+
+        Transaction saved = transactionRepository.save(existing);
+        eventPublisher.publishUpdated(saved);
+        return TransactionMapper.toResponse(saved);
+    }
+
+    private void validateAmount(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount must be greater than zero");
+        }
+    }
+
+    private void applyUpdates(Transaction transaction, TransactionRequest dto, String userId) {
+        transaction.setType(dto.type());
+        transaction.setAmount(dto.amount());
+        transaction.setCategory(dto.category());
+        transaction.setDate(dto.date());
+        transaction.setDescription(dto.description());
+        // El userId SIEMPRE viene del token, NUNCA del DTO
+        transaction.setUserId(userId);
     }
 
     /**
-     * Obtiene todas las transacciones del sistema con paginación.
+     * Busca una transacción por su ID, validando que pertenece al usuario autenticado.
      *
-     * <p><strong>Nota:</strong> Este método retorna las transacciones de <em>todos</em>
-     * los usuarios, no filtradas por {@code userId}. El filtrado por usuario se
-     * hace actualmente en el frontend. Esto representa un posible problema de
-     * seguridad si no se implementa filtrado por usuario en el backend.</p>
-     *
-     * @param pageable parámetros de paginación (page, size, sort) inyectados por Spring
-     * @return respuesta paginada con la lista de transacciones
+     * @param userId ID del usuario autenticado
+     * @param id ID de la transacción
+     * @return respuesta con los datos de la transacción
+     * @throws NotFoundException si la transacción no existe o no pertenece al usuario
      */
     @Override
-    public PaginatedResponse<TransactionResponse> getAll(Pageable pageable) {
-        Page<Transaction> page = transactionRepository.findAll(pageable);
+    public TransactionResponse getById(String userId, Long id) {
+        Transaction found = transactionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+        
+        // Si la transacción no pertenece al usuario, lanzar excepción
+        validateTransactionOwnership(userId, found);
+        
+        return TransactionMapper.toResponse(found);
+    }
+
+    @Override
+    public PaginatedResponse<TransactionResponse> getAll(String userId, Pageable pageable) {
+        // Filtrar por userId en la query de la base de datos
+        Page<Transaction> page = transactionRepository.findByUserIdOrderByDateDesc(userId, pageable);
         List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
 
         return new PaginatedResponse<>(
@@ -143,5 +130,50 @@ public class TransactionServiceImpl implements TransactionService {
                 page.isLast());
     }
 
-}
+    /**
+     * Lista todas las transacciones del usuario filtradas por periodo (yyyy-MM).
+     */
+    @Override
+    public PaginatedResponse<TransactionResponse> getByPeriod(String userId, String period, Pageable pageable) {
+        java.time.YearMonth yearMonth = java.time.YearMonth.parse(period);
+        java.time.LocalDate start = yearMonth.atDay(1);
+        java.time.LocalDate end = yearMonth.atEndOfMonth();
 
+        Page<Transaction> page = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(userId, start, end, pageable);
+        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
+
+        return new PaginatedResponse<>(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast());
+    }
+
+    /**
+     * Valida que una transacción pertenece al usuario autenticado.
+     * Lanza una excepción si no es así (para mantener concepto de no divulgar IDs de otros usuarios).
+     *
+     * @param userId ID del usuario autenticado
+     * @param transaction entidad a validar
+     * @throws NotFoundException si la transacción no pertenece al usuario
+     */
+    private void validateTransactionOwnership(String userId, Transaction transaction) {
+        if (!transaction.getUserId().equals(userId)) {
+            throw new NotFoundException("Transaction not found");
+        }
+    }
+
+    @Override
+    public void delete(String userId, Long id) {
+        Transaction existing = transactionRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        // Validar que la transacción pertenece al usuario autenticado
+        validateTransactionOwnership(userId, existing);
+
+        transactionRepository.delete(existing);
+        eventPublisher.publishDeleted(existing);
+    }
+}

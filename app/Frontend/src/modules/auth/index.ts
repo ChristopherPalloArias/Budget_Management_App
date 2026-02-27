@@ -2,7 +2,7 @@
 export { useUserStore } from './store/useUserStore.ts';
 
 // Services
-export { loginWithEmail, loginWithGoogle, logout, registerWithEmail } from './services/authService.ts';
+export { loginWithEmail, logout, registerWithEmail } from './services/authService.ts';
 
 // Schemas
 export { loginSchema, type LoginFormData } from './schemas/loginSchema.ts';

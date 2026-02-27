@@ -15,7 +15,7 @@ import type { IAuthUser } from "@/core/auth/interfaces/IAuthRepository";
  * - Execution of expected authentication methods
  */
 describe("LoginForm - Integration Tests", () => {
-  // Datos reales del usuario de prueba en Firebase
+  // Datos del usuario de prueba
   const mockUser: IAuthUser = {
     id: "test-uid-123",
     email: "test@test.com",
@@ -33,7 +33,7 @@ describe("LoginForm - Integration Tests", () => {
    */
   describe("Validación de navegación", () => {
     it("debe redirigir al dashboard después de un login exitoso con email y contraseña", async () => {
-      // Arrange: Configurar el mock del repositorio con datos reales de Firebase
+      // Arrange: Configurar el mock del repositorio con datos de prueba
       (authRepository.signIn as jest.Mock).mockResolvedValue(mockUser);
       const user = userEvent.setup();
 
@@ -73,40 +73,6 @@ describe("LoginForm - Integration Tests", () => {
       });
     });
 
-    it("debe redirigir al dashboard después de un login exitoso con Google", async () => {
-      // Arrange: Configurar el mock del repositorio para Google Auth
-      (authRepository.signInWithProvider as jest.Mock).mockResolvedValue(
-        mockUser,
-      );
-      const user = userEvent.setup();
-
-      // Mock del navigate para verificar la navegación
-      const mockNavigate = jest.fn();
-      jest.spyOn(ReactRouterDom, "useNavigate").mockReturnValue(mockNavigate);
-
-      // Renderizar el componente
-      render(
-        <MemoryRouter initialEntries={["/login"]}>
-          <LoginForm />
-        </MemoryRouter>,
-      );
-
-      // Act: Hacer clic en el botón de Google
-      const googleButton = screen.getByRole("button", { name: /google/i });
-      await user.click(googleButton);
-
-      // Assert: Verificar que se llamó al método de autenticación con Google
-      await waitFor(() => {
-        expect(authRepository.signInWithProvider).toHaveBeenCalledWith(
-          "GOOGLE",
-        );
-      });
-
-      // Assert: Verificar que se llamó a navigate con la ruta del dashboard
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
-      });
-    });
   });
 
   /**
@@ -238,35 +204,6 @@ describe("LoginForm - Integration Tests", () => {
       });
     });
 
-    it("debe ejecutar el método signInWithProvider al usar autenticación con Google", async () => {
-      // Arrange: Configurar mock para Google Auth
-      (authRepository.signInWithProvider as jest.Mock).mockResolvedValue(
-        mockUser,
-      );
-      const user = userEvent.setup();
-
-      render(
-        <MemoryRouter initialEntries={["/login"]}>
-          <LoginForm />
-        </MemoryRouter>,
-      );
-
-      // Act: Hacer clic en el botón de Google
-      const googleButton = screen.getByRole("button", { name: /google/i });
-      await user.click(googleButton);
-
-      // Assert: Verificar que se ejecutó el método correcto
-      await waitFor(() => {
-        // Verificar que se llamó con el proveedor correcto
-        expect(authRepository.signInWithProvider).toHaveBeenCalledTimes(1);
-        expect(authRepository.signInWithProvider).toHaveBeenCalledWith(
-          "GOOGLE",
-        );
-
-        // Verificar que el método de email/password no fue llamado
-        expect(authRepository.signIn).not.toHaveBeenCalled();
-      });
-    });
 
     it("debe manejar múltiples intentos de autenticación correctamente", async () => {
       // Arrange: Simular primer intento fallido y segundo exitoso

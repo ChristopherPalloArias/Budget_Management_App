@@ -28,8 +28,47 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<jjwt.version>0.12.6</jjwt.version>
 	</properties>
 	<dependencies>
+		<!-- Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- Observability: Actuator -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Observability: Micrometer Prometheus registry -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		
+		<!-- JWT -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		
+		<!-- Messaging -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
@@ -125,8 +164,109 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.2.5</version>
 				<configuration>
-					<argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar</argLine>
+					<argLine>@{argLine} -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar</argLine>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.11</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<excludes>
+								<!-- Application entry point -->
+								<exclude>**/ReportApplication.class</exclude>
+								<!-- Config classes (Spring Boot infrastructure) -->
+								<exclude>**/config/CorsConfig.class</exclude>
+								<exclude>**/config/RestTemplateConfig.class</exclude>
+								<exclude>**/config/SecurityConfig.class</exclude>
+								<!-- Infrastructure config -->
+								<exclude>**/infrastructure/RabbitMQConfiguration.class</exclude>
+								<!-- DTOs (no business logic) -->
+								<exclude>**/dto/PaginatedResponse.class</exclude>
+								<exclude>**/dto/RecalculateReportRequest.class</exclude>
+								<exclude>**/dto/RecordTransactionCommand.class</exclude>
+								<exclude>**/dto/ReportResponse.class</exclude>
+								<exclude>**/dto/ReportSummary.class</exclude>
+								<!-- Infrastructure DTOs -->
+								<exclude>**/infrastructure/dto/TransactionMessage.class</exclude>
+								<exclude>**/infrastructure/dto/TransactionType.class</exclude>
+								<!-- JPA Models -->
+								<exclude>**/model/Report.class</exclude>
+								<exclude>**/model/ProcessedMessage.class</exclude>
+								<!-- Spring Data repositories (interfaces) -->
+								<exclude>**/repository/ReportRepository.class</exclude>
+								<exclude>**/repository/ProcessedMessageRepository.class</exclude>
+								<!-- Exception types (trivial constructors) -->
+								<exclude>**/exception/ErrorResponse.class</exclude>
+								<exclude>**/exception/PdfGenerationException.class</exclude>
+								<exclude>**/exception/ReportNotFoundException.class</exclude>
+								<exclude>**/exception/ServiceIntegrationException.class</exclude>
+								<!-- Exception handler (requires integration tests) -->
+								<exclude>**/exception/GlobalExceptionHandler.class</exclude>
+								<!-- Security (requires integration tests) -->
+								<exclude>**/security/JwtAuthenticationFilter.class</exclude>
+								<exclude>**/security/JwtTokenProvider.class</exclude>
+								<!-- HTTP client and inner types (requires integration tests) -->
+								<exclude>**/infrastructure/client/TransactionClientImpl.class</exclude>
+								<exclude>**/infrastructure/client/TransactionClientImpl$*.class</exclude>
+								<!-- Service interfaces and their inner types (no executable code) -->
+								<exclude>**/service/ReportCommandService.class</exclude>
+								<exclude>**/service/ReportQueryService.class</exclude>
+								<exclude>**/service/ReportService.class</exclude>
+								<exclude>**/service/TransactionClient.class</exclude>
+								<exclude>**/service/TransactionClient$*.class</exclude>
+								<exclude>**/service/PdfGeneratorService.class</exclude>
+								<!-- Legacy impl (superseded, no dedicated tests) -->
+								<exclude>**/service/impl/ReportServiceImpl.class</exclude>
+								<exclude>**/service/impl/ReportServiceImpl$*.class</exclude>
+								<!-- Query service (no dedicated unit tests) -->
+								<exclude>**/service/impl/ReportQueryServiceImpl.class</exclude>
+								<exclude>**/service/impl/ReportQueryServiceImpl$*.class</exclude>
+								<!-- Mapper classes (no dedicated unit tests) -->
+								<exclude>**/infrastructure/mapper/TransactionUpdateMapper.class</exclude>
+								<exclude>**/mapper/ReportMapper.class</exclude>
+								<!-- Template (no dedicated unit tests) -->
+								<exclude>**/template/ReportPdfTemplate.class</exclude>
+								<!-- Utilities without dedicated tests -->
+								<exclude>**/util/PaginationUtils.class</exclude>
+								<!-- Validation annotation (no executable code) -->
+								<exclude>**/validation/ValidPeriod.class</exclude>
+								<!-- Validator (no dedicated unit tests) -->
+								<exclude>**/validation/PeriodValidator.class</exclude>
+							</excludes>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.70</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

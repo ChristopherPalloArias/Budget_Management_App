@@ -1,0 +1,76 @@
+name: Reusable Frontend Workflow
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '19.2'
+      frontend-dir:
+        required: true
+        type: string
+
+jobs:
+  test:
+    name: Frontend Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      issues: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        run: npm install -g pnpm
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+        working-directory: ${{ inputs.frontend-dir }}
+
+      - name: Lint
+        run: pnpm run lint
+        working-directory: ${{ inputs.frontend-dir }}
+
+      - name: Type Check
+        run: npx tsc --noEmit
+        working-directory: ${{ inputs.frontend-dir }}
+
+      - name: Run Unit Tests
+        run: pnpm run test
+        working-directory: ${{ inputs.frontend-dir }}
+        id: frontend_tests
+
+      - name: Run Coverage
+        run: pnpm run test:coverage
+        working-directory: ${{ inputs.frontend-dir }}
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: ${{ inputs.frontend-dir }}/coverage/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Create Issue on Failure
+        if: steps.frontend_tests.outcome == 'failure' && github.ref == 'refs/heads/develop'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branchName = github.ref == 'refs/heads/develop' ? 'develop' : context.ref.replace('refs/heads/', '');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🐛 Frontend Tests Failed - ' + branchName,
+              body: 'Automated report: Frontend tests failed in the ' + branchName + ' branch.',
+              labels: ['bug', 'automated-report']
+            });

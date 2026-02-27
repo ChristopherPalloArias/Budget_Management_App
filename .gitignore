@@ -1,5 +1,6 @@
 **/.env
 **/.idea
+**/.claude
 
 # Dependencies
 node_modules/
@@ -9,6 +10,9 @@ node_modules/
 dist/
 build/
 *.local
+
+# Maven build output (compiled classes, test reports, etc.)
+**/target/
 
 # Environment
 .env
@@ -39,3 +43,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# Misc
+/.infracost/*
