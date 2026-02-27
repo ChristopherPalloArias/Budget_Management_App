@@ -20,4 +20,3 @@ module "ec2" {
   repo_url = var.repo_url
   environment = var.environment 
 }
-

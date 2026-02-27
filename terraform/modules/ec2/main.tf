@@ -18,7 +18,7 @@ resource "aws_instance" "web_server" {
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.generated_key.key_name
   vpc_security_group_ids      = [var.security_group_id]
-  associate_public_ip_address = false
+  associate_public_ip_address = true
 
   user_data = templatefile("${path.module}/user_data.sh", {
     repo_url    = var.repo_url
@@ -28,16 +28,4 @@ resource "aws_instance" "web_server" {
   tags = {
     Name = var.instance_name
   }
-}
-
-output "instance_id" {
-  value = aws_instance.web_server.id
-}
-
-output "private_key_path" {
-  value = local_sensitive_file.private_key.filename
-}
-
-output "instance_id" {
-  value = aws_instance.main.id
 }

@@ -18,6 +18,7 @@ variable "instance_name" {
 variable "ami_id" {
   description = "The AMI ID to use for the instance"
   type        = string
+  default     = "ami-0f3caa1cf4417e51b"
 }
 
 variable "repo_url" {
