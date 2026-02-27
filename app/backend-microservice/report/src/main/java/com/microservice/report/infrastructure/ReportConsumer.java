@@ -32,15 +32,16 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  *
  * <h3>Configuración de Colas</h3>
- * <p>Este consumidor escucha en <strong>dos colas</strong> independientes, configuradas
+ * <p>Este consumidor escucha en <strong>tres colas</strong> independientes, configuradas
  * en {@code RabbitMQConfiguration}:</p>
  * <ul>
  *   <li>{@code transaction-created} — Routing key: {@code "transaction.created"}</li>
  *   <li>{@code transaction-updated} — Routing key: {@code "transaction.updated"}</li>
+ *   <li>{@code transaction-deleted} — Routing key: {@code "transaction.deleted"}</li>
  * </ul>
- * <p>Ambas colas están vinculadas al {@code TopicExchange} llamado
+ * <p>Todas las colas están vinculadas al {@code TopicExchange} llamado
  * {@code "transaction-exchange"}. Los nombres de las colas se inyectan desde
- * {@code application.properties} vía {@code ${rabbitmq.queues.*}}.</p>
+ * {@code application.yaml} vía {@code ${rabbitmq.queues.*}}.</p>
  *
  * <h3>Deuda Técnica Identificada</h3>
  * <ul>
@@ -125,6 +126,42 @@ public class ReportConsumer {
         log.info("Successfully updated transaction ID: {}", transactionMessage.transactionId());
     }
 
+    /**
+     * Consume mensajes de la cola de transacciones <strong>eliminadas</strong>.
+     *
+     * <p>Este método escucha la cola {@code transaction-deleted} y procesa las
+     * transacciones que han sido eliminadas en el microservicio de transacciones.</p>
+     *
+     * <p><strong>Estrategia de Reversa:</strong> Para revertir el efecto de una transacción
+     * eliminada, se invierte el tipo de transacción:
+     * <ul>
+     *   <li>Si la transacción era INCOME (ingreso), se aplica como EXPENSE (gasto) para restar</li>
+     *   <li>Si la transacción era EXPENSE (gasto), se aplica como INCOME (ingreso) para restar</li>
+     * </ul>
+     * De esta manera, el balance del reporte se ajusta correctamente al eliminar la transacción.</p>
+     *
+     * <p><strong>Idempotencia:</strong> El método usa un messageId sintético basado en el
+     * transactionId para garantizar que el mismo mensaje de eliminación no se procese múltiples
+     * veces, evitando doble reversa del mismo evento.</p>
+     *
+     * @param transactionMessage mensaje deserializado con los datos de la transacción eliminada
+     * @param messageId identificador único del mensaje AMQP (opcional)
+     */
+    @RabbitListener(queues = "${rabbitmq.queues.transaction-deleted}")
+    public void consumeDeleted(TransactionMessage transactionMessage,
+                               @Header(value = AmqpHeaders.MESSAGE_ID, required = false) String messageId) {
+        log.info("Processing Deleted transaction ID: {}", transactionMessage.transactionId());
+        
+        // Fallback to transactionId if messageId is not provided by producer
+        String finalMessageId = messageId != null ? messageId : "DELETED-" + transactionMessage.transactionId();
+        
+        // Revertir la transacción eliminada aplicando el tipo inverso
+        RecordTransactionCommand reverseCommand = toReverseCommand(transactionMessage);
+        reportCommandService.updateReport(reverseCommand, finalMessageId);
+        
+        log.info("Successfully reverted deleted transaction ID: {}", transactionMessage.transactionId());
+    }
+
     private void handleWithRetry(TransactionMessage transactionMessage) {
         int attempts = 0;
         while (attempts < MAX_RETRIES) {
@@ -153,6 +190,29 @@ public class ReportConsumer {
         return new RecordTransactionCommand(
                 message.userId(),
                 message.type().name(),
+                message.amount(),
+                message.date()
+        );
+    }
+
+    /**
+     * Convierte un mensaje de transacción eliminada en un comando de reversión.
+     * 
+     * <p>La reversión se logra invirtiendo el tipo de transacción:
+     * <ul>
+     *   <li>INCOME → EXPENSE (para restar el ingreso del total)</li>
+     *   <li>EXPENSE → INCOME (para restar el gasto del total)</li>
+     * </ul>
+     * 
+     * @param message mensaje de transacción eliminada
+     * @return comando con tipo invertido para revertir el efecto
+     */
+    private RecordTransactionCommand toReverseCommand(TransactionMessage message) {
+        // Invertir el tipo para revertir el efecto
+        String reverseType = message.type().name().equals("INCOME") ? "EXPENSE" : "INCOME";
+        return new RecordTransactionCommand(
+                message.userId(),
+                reverseType,
                 message.amount(),
                 message.date()
         );

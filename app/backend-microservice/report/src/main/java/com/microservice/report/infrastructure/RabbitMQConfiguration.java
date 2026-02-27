@@ -20,6 +20,8 @@ public class RabbitMQConfiguration {
     private String transactionCreatedQueue;
     @Value("${rabbitmq.queues.transaction-updated}")
     private String transactionUpdatedQueue;
+    @Value("${rabbitmq.queues.transaction-deleted}")
+    private String transactionDeletedQueue;
 
     @Bean
     public TopicExchange transactionExchange() {
@@ -37,6 +39,11 @@ public class RabbitMQConfiguration {
     }
 
     @Bean
+    public Queue deletedQueue() {
+        return new Queue(transactionDeletedQueue, true);
+    }
+
+    @Bean
     public Binding bindingCreated(Queue createdQueue, TopicExchange transactionExchange) {
         return BindingBuilder.bind(createdQueue)
                 .to(transactionExchange)
@@ -48,6 +55,13 @@ public class RabbitMQConfiguration {
         return BindingBuilder.bind(updatedQueue)
                 .to(transactionExchange)
                 .with("transaction.updated");
+    }
+
+    @Bean
+    public Binding bindingDeleted(Queue deletedQueue, TopicExchange transactionExchange) {
+        return BindingBuilder.bind(deletedQueue)
+                .to(transactionExchange)
+                .with("transaction.deleted");
     }
 
     @Bean

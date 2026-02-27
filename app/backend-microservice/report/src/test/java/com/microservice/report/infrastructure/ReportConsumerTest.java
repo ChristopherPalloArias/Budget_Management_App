@@ -139,4 +139,118 @@ class ReportConsumerTest {
         verify(reportCommandService, times(3)).updateReport(any(RecordTransactionCommand.class), anyString());
         verifyNoInteractions(reportRepository);
     }
+
+    @Test
+    @DisplayName("should reverse INCOME as EXPENSE when transaction is deleted")
+    void shouldReverseIncome_whenTransactionDeleted() {
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
+
+        TransactionMessage deletedMessage = new TransactionMessage(
+                30L,
+                "user-789",
+                TransactionType.INCOME,
+                new BigDecimal("500.00"),
+                LocalDate.of(2025, 3, 15),
+                "Salary",
+                "Deleted income transaction",
+                null,
+                null
+        );
+
+        consumer.consumeDeleted(deletedMessage, "msg-123");
+
+        ArgumentCaptor<RecordTransactionCommand> commandCaptor = ArgumentCaptor.forClass(RecordTransactionCommand.class);
+        ArgumentCaptor<String> messageIdCaptor = ArgumentCaptor.forClass(String.class);
+
+        verify(reportCommandService).updateReport(commandCaptor.capture(), messageIdCaptor.capture());
+
+        RecordTransactionCommand reverseCommand = commandCaptor.getValue();
+
+        // INCOME se revierte como EXPENSE para restar el ingreso del total
+        assertEquals("EXPENSE", reverseCommand.type(),
+                "INCOME should be reversed as EXPENSE");
+        assertEquals(new BigDecimal("500.00"), reverseCommand.amount(),
+                "Amount should remain the same");
+        assertEquals(LocalDate.of(2025, 3, 15), reverseCommand.date(),
+                "Date should remain the same");
+        assertEquals("user-789", reverseCommand.userId(),
+                "UserId should remain the same");
+
+        // Verificar que se usa el messageId proporcionado
+        assertEquals("msg-123", messageIdCaptor.getValue(),
+                "Should use provided messageId");
+
+        verifyNoInteractions(reportRepository);
+    }
+
+    @Test
+    @DisplayName("should reverse EXPENSE as INCOME when transaction is deleted")
+    void shouldReverseExpense_whenTransactionDeleted() {
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
+
+        TransactionMessage deletedMessage = new TransactionMessage(
+                40L,
+                "user-456",
+                TransactionType.EXPENSE,
+                new BigDecimal("250.00"),
+                LocalDate.of(2025, 3, 20),
+                "Shopping",
+                "Deleted expense transaction",
+                null,
+                null
+        );
+
+        consumer.consumeDeleted(deletedMessage, null);  // Sin messageId
+
+        ArgumentCaptor<RecordTransactionCommand> commandCaptor = ArgumentCaptor.forClass(RecordTransactionCommand.class);
+        ArgumentCaptor<String> messageIdCaptor = ArgumentCaptor.forClass(String.class);
+
+        verify(reportCommandService).updateReport(commandCaptor.capture(), messageIdCaptor.capture());
+
+        RecordTransactionCommand reverseCommand = commandCaptor.getValue();
+
+        // EXPENSE se revierte como INCOME para restar el gasto del total
+        assertEquals("INCOME", reverseCommand.type(),
+                "EXPENSE should be reversed as INCOME");
+        assertEquals(new BigDecimal("250.00"), reverseCommand.amount(),
+                "Amount should remain the same");
+        assertEquals(LocalDate.of(2025, 3, 20), reverseCommand.date(),
+                "Date should remain the same");
+        assertEquals("user-456", reverseCommand.userId(),
+                "UserId should remain the same");
+
+        // Verificar que se genera un messageId sintético cuando no se proporciona
+        assertEquals("DELETED-40", messageIdCaptor.getValue(),
+                "Should generate synthetic messageId when not provided");
+
+        verifyNoInteractions(reportRepository);
+    }
+
+    @Test
+    @DisplayName("should use synthetic messageId when not provided for deleted transaction")
+    void shouldUseSyntheticMessageId_whenNotProvided() {
+        ReportConsumer consumer = new ReportConsumer(reportCommandService, new TransactionUpdateMapper());
+
+        TransactionMessage deletedMessage = new TransactionMessage(
+                50L,
+                "user-123",
+                TransactionType.INCOME,
+                new BigDecimal("100.00"),
+                LocalDate.of(2025, 3, 25),
+                "Bonus",
+                "Deleted",
+                null,
+                null
+        );
+
+        consumer.consumeDeleted(deletedMessage, null);
+
+        ArgumentCaptor<String> messageIdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(reportCommandService).updateReport(any(RecordTransactionCommand.class), messageIdCaptor.capture());
+
+        assertEquals("DELETED-50", messageIdCaptor.getValue(),
+                "Should generate messageId as 'DELETED-{transactionId}' when not provided");
+
+        verifyNoInteractions(reportRepository);
+    }
 }
