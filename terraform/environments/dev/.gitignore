@@ -10,3 +10,5 @@ crash.log
 
 # Ignore sensitive files
 terraform.tfvars
+*.pem
+.terraform.lock.hcl
