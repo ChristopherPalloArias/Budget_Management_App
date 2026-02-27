@@ -273,12 +273,17 @@ class TransactionServiceImplTest {
 
         // Por seguridad, se lanza NotFoundException en lugar de AccessDeniedException
         // para no revelar la existencia del recurso
-        assertThrows(NotFoundException.class,
+        NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> transactionService.delete(userId, transactionId),
                 "Should throw NotFoundException when trying to delete another user's transaction"
         );
+        
+        // ✅ Verificar que el mensaje incluya el ID
+        assertTrue(exception.getMessage().contains("with id: " + transactionId),
+                "Error message should include the transaction ID for debugging");
 
         verify(transactionRepository, never()).delete(any());
         verify(eventPublisher, never()).publishDeleted(any());
+    }
     }
 }

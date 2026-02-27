@@ -98,7 +98,7 @@ class TransactionControllerTest {
         Long transactionId = 999L;
 
         when(transactionService.updateTransaction(eq("user-123"), eq(transactionId), any(TransactionRequest.class)))
-                .thenThrow(new NotFoundException("Transaction not found"));
+                .thenThrow(new NotFoundException("Transaction not found with id: " + transactionId));
 
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn("user-123");
@@ -159,7 +159,7 @@ class TransactionControllerTest {
     void shouldReturn404_whenDeleteNonExistentTransaction() throws Exception {
         Long transactionId = 999L;
         
-        doThrow(new NotFoundException("Transaction not found"))
+        doThrow(new NotFoundException("Transaction not found with id: " + transactionId))
                 .when(transactionService).delete(eq("user-123"), eq(transactionId));
         
         Principal principal = mock(Principal.class);
@@ -178,7 +178,7 @@ class TransactionControllerTest {
         Long transactionId = 123L;
         
         // Por seguridad, retornar 404 en lugar de 403 para no divulgar existencia del recurso
-        doThrow(new NotFoundException("Transaction not found"))
+        doThrow(new NotFoundException("Transaction not found with id: " + transactionId))
                 .when(transactionService).delete(eq("user-123"), eq(transactionId));
         
         Principal principal = mock(Principal.class);

@@ -68,10 +68,10 @@ public class TransactionServiceImpl implements TransactionService {
         validateAmount(dto.amount());
 
         Transaction existing = transactionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
 
         // Validar que la transacción pertenece al usuario autenticado
-        validateTransactionOwnership(userId, existing);
+        validateTransactionOwnership(userId, existing, id);
 
         applyUpdates(existing, dto, userId);
 
@@ -80,21 +80,7 @@ public class TransactionServiceImpl implements TransactionService {
         return TransactionMapper.toResponse(saved);
     }
 
-    private void validateAmount(BigDecimal amount) {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Amount must be greater than zero");
-        }
-    }
-
-    private void applyUpdates(Transaction transaction, TransactionRequest dto, String userId) {
-        transaction.setType(dto.type());
-        transaction.setAmount(dto.amount());
-        transaction.setCategory(dto.category());
-        transaction.setDate(dto.date());
-        transaction.setDescription(dto.description());
-        // El userId SIEMPRE viene del token, NUNCA del DTO
-        transaction.setUserId(userId);
-    }
+    // ...existing code...
 
     /**
      * Busca una transacción por su ID, validando que pertenece al usuario autenticado.
@@ -107,49 +93,15 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public TransactionResponse getById(String userId, Long id) {
         Transaction found = transactionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
         
         // Si la transacción no pertenece al usuario, lanzar excepción
-        validateTransactionOwnership(userId, found);
+        validateTransactionOwnership(userId, found, id);
         
         return TransactionMapper.toResponse(found);
     }
 
-    @Override
-    public PaginatedResponse<TransactionResponse> getAll(String userId, Pageable pageable) {
-        // Filtrar por userId en la query de la base de datos
-        Page<Transaction> page = transactionRepository.findByUserIdOrderByDateDesc(userId, pageable);
-        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
-
-        return new PaginatedResponse<>(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isLast());
-    }
-
-    /**
-     * Lista todas las transacciones del usuario filtradas por periodo (yyyy-MM).
-     */
-    @Override
-    public PaginatedResponse<TransactionResponse> getByPeriod(String userId, String period, Pageable pageable) {
-        java.time.YearMonth yearMonth = java.time.YearMonth.parse(period);
-        java.time.LocalDate start = yearMonth.atDay(1);
-        java.time.LocalDate end = yearMonth.atEndOfMonth();
-
-        Page<Transaction> page = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(userId, start, end, pageable);
-        List<TransactionResponse> content = page.map(TransactionMapper::toResponse).getContent();
-
-        return new PaginatedResponse<>(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isLast());
-    }
+    // ...existing code...
 
     /**
      * Valida que una transacción pertenece al usuario autenticado.
@@ -157,21 +109,22 @@ public class TransactionServiceImpl implements TransactionService {
      *
      * @param userId ID del usuario autenticado
      * @param transaction entidad a validar
+     * @param id ID de la transacción (para mensajes de error)
      * @throws NotFoundException si la transacción no pertenece al usuario
      */
-    private void validateTransactionOwnership(String userId, Transaction transaction) {
+    private void validateTransactionOwnership(String userId, Transaction transaction, Long id) {
         if (!transaction.getUserId().equals(userId)) {
-            throw new NotFoundException("Transaction not found");
+            throw new NotFoundException("Transaction not found with id: " + id);
         }
     }
 
     @Override
     public void delete(String userId, Long id) {
         Transaction existing = transactionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found with id: " + id));
 
         // Validar que la transacción pertenece al usuario autenticado
-        validateTransactionOwnership(userId, existing);
+        validateTransactionOwnership(userId, existing, id);
 
         transactionRepository.delete(existing);
         eventPublisher.publishDeleted(existing);
