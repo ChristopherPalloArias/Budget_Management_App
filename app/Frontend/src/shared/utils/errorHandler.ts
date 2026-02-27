@@ -15,6 +15,10 @@ const getErrorType = (error: unknown): ErrorType => {
     return 'API';
   }
   
+  if (error && typeof error === 'object' && 'response' in error) {
+    return 'API';
+  }
+  
   return 'UNKNOWN';
 };
 
@@ -34,6 +38,16 @@ const getErrorMessage = (error: unknown): string => {
       const data = err.data as Record<string, unknown>;
       if ('message' in data && typeof data.message === 'string') {
         return data.message;
+      }
+    }
+
+    if ('response' in err && typeof err.response === 'object' && err.response !== null) {
+      const response = err.response as Record<string, unknown>;
+      if ('data' in response && typeof response.data === 'object' && response.data !== null) {
+        const data = response.data as Record<string, unknown>;
+        if ('message' in data && typeof data.message === 'string') {
+          return data.message;
+        }
       }
     }
   }
