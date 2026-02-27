@@ -571,9 +571,9 @@
           ]
         },
         {
-          "name": "F-07.2 — POST recalculate",
+          "name": "F-07.2 — PUT recalculate",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",

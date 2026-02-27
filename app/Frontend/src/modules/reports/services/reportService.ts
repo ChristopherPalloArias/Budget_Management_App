@@ -64,11 +64,15 @@ const triggerBlobDownload = (data: BlobPart, fileName: string, mimeType: string)
 export const deleteReport = async (id: string | number): Promise<void> => {
     await reportsHttpClient.delete(`/v1/reports/${id}`);
 };
+/**
+ * Recalcula un reporte financiero existente para un período específico.
+ * Esta es una operación idempotente que actualiza el reporte con valores recalculados.
+ */
 export const recalculateReport = async (period: string): Promise<RecalculateReportResponse> => {
     const endpoint = '/v1/reports/recalculate';
     const body: RecalculateReportRequest = {
         period,
     };
-    const response = await reportsHttpClient.post<RecalculateReportResponse>(endpoint, body);
+    const response = await reportsHttpClient.put<RecalculateReportResponse>(endpoint, body);
     return response.data;
 };
