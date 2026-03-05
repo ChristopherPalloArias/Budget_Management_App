@@ -261,7 +261,7 @@ public class ROIVisualizerTest {
         
         double initialBalance = 0.0;
         if (initialSummaryResponse.statusCode() == 200) {
-            initialBalance = initialSummaryResponse.jsonPath().getDouble("totalBalance");
+            initialBalance = initialSummaryResponse.jsonPath().getDouble("balance");
         }
         System.out.println("   Balance inicial API: $" + initialBalance);
 
@@ -313,7 +313,7 @@ public class ROIVisualizerTest {
             .as("Report summary should return 200 OK")
             .isEqualTo(200);
 
-        double finalBalance = finalSummaryResponse.jsonPath().getDouble("totalBalance");
+        double finalBalance = finalSummaryResponse.jsonPath().getDouble("balance");
         double delta = finalBalance - initialBalance;
         
         assertThat(delta)

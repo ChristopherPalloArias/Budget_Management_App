@@ -100,6 +100,7 @@ def serenityUiDir  = file('target/site/serenity-ui').absolutePath
 task testApi(type: Test) {
     description = 'Run API tests only (BudgetApiTestSuite)'
     group = 'verification'
+    outputs.upToDateWhen { false }
 
     useJUnitPlatform()
 
@@ -139,6 +140,7 @@ task testApi(type: Test) {
 task testUi(type: Test) {
     description = 'Run UI tests only (ROIVisualizerTest)'
     group = 'verification'
+    outputs.upToDateWhen { false }
 
     useJUnitPlatform()
 
