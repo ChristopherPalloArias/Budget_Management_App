@@ -20,7 +20,7 @@ El antipatrón del cono de helado sugiere automatizar masivamente a través de l
 
 La verdadera estrategia de un **Arquitecto SDET** radica en **empujar el descubrimiento de bugs hacia la base del código fuente (Unitario/API)**. En las capas inferiores, arreglar un defecto cuesta fracciones de centavo, su ejecución toma escasos milisegundos y su mantenimiento es ínfimo, maximizando exponencialmente el Retorno de Inversión y asegurando una entrega continua de calidad real.
 
-## ⚙️ Stack Tecnológick
+## ⚙️ Stack Tecnológico
 
 ### QA, Backend y Automatización
 [![Java](https://skillicons.dev/icons?i=java)](https://www.java.com/)
