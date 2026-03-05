@@ -1,0 +1,230 @@
+// ══════════════════════════════════════════════════════════════════════════════
+//  Budget Management App — QA Automation Module
+//  Serenity BDD 4.x + Screenplay + JUnit 5 + REST Assured
+//  Java 17 | Gradle
+// ══════════════════════════════════════════════════════════════════════════════
+
+plugins {
+    id 'java'
+    id 'net.serenity-bdd.serenity-gradle-plugin' version "${serenityVersion}"
+}
+
+// ─── Java Configuration ─────────────────────────────────────────────────────
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// ─── Repositories ───────────────────────────────────────────────────────────
+repositories {
+    mavenCentral()
+}
+
+// ─── Dependencies ───────────────────────────────────────────────────────────
+dependencies {
+
+    // ── Serenity BDD Core ───────────────────────────────────────────────────
+    testImplementation "net.serenity-bdd:serenity-core:${serenityVersion}"
+    testImplementation "net.serenity-bdd:serenity-junit5:${serenityVersion}"
+
+    // ── Screenplay Pattern ──────────────────────────────────────────────────
+    testImplementation "net.serenity-bdd:serenity-screenplay:${serenityVersion}"
+    testImplementation "net.serenity-bdd:serenity-screenplay-rest:${serenityVersion}"
+    testImplementation "net.serenity-bdd:serenity-screenplay-webdriver:${serenityVersion}"
+
+    // ── REST Assured Integration ────────────────────────────────────────────
+    testImplementation "net.serenity-bdd:serenity-rest-assured:${serenityVersion}"
+    testImplementation "io.rest-assured:rest-assured:${restAssuredVersion}"
+    testImplementation "io.rest-assured:json-path:${restAssuredVersion}"
+    testImplementation "io.rest-assured:json-schema-validator:${restAssuredVersion}"
+
+    // ── Cucumber / BDD (Gherkin Features) ───────────────────────────────────
+    testImplementation "net.serenity-bdd:serenity-cucumber:${serenityVersion}"
+    testImplementation "io.cucumber:cucumber-java:7.15.0"
+    testImplementation "io.cucumber:cucumber-junit-platform-engine:7.15.0"
+
+    // ── JUnit 5 ─────────────────────────────────────────────────────────────
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+    testImplementation "org.junit.platform:junit-platform-suite:${junitPlatformVersion}"
+    testImplementation "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
+
+    // ── Assertions ──────────────────────────────────────────────────────────
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.hamcrest:hamcrest:2.2"
+
+    // ── Logging ─────────────────────────────────────────────────────────────
+    testImplementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    // ── JSON Processing ─────────────────────────────────────────────────────
+    testImplementation "com.google.code.gson:gson:2.10.1"
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:2.17.0"
+}
+
+// ─── Base Test Configuration ────────────────────────────────────────────────
+test {
+    useJUnitPlatform()
+
+    // Exclude the Cucumber suite from the standard test task (steps not implemented)
+    exclude '**/CucumberTestSuite*'
+
+    // Serenity system properties
+    systemProperty 'serenity.project.name', 'Budget Management App — QA Automation'
+
+    // JVM args for Java 17 compatibility with Serenity/Byte Buddy
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+
+    // Test output
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        exceptionFormat "full"
+    }
+
+    // Ensure Serenity reports are generated even if tests fail
+    finalizedBy 'aggregate'
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CUSTOM TEST TASKS — Isolated Execution & Reports
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Absolute paths for Serenity output — MUST be absolute to avoid recursive
+// directory creation (api/api/api/... bug with relative paths)
+def serenityApiDir = file('target/site/serenity-api').absolutePath
+def serenityUiDir  = file('target/site/serenity-ui').absolutePath
+
+// ─── testApi: Runs only BudgetApiTestSuite ──────────────────────────────────
+task testApi(type: Test) {
+    description = 'Run API tests only (BudgetApiTestSuite)'
+    group = 'verification'
+
+    useJUnitPlatform()
+
+    // Include ONLY the API test suite
+    include '**/BudgetApiTestSuite*'
+
+    // Serenity output directory — ABSOLUTE path, isolated for API
+    systemProperty 'serenity.project.name', 'Budget App — API Tests'
+    systemProperty 'serenity.outputDirectory', serenityApiDir
+
+    // API tests don't use a browser — disable screenshots and verbose logging
+    systemProperty 'serenity.take.screenshots', 'DISABLED'
+    systemProperty 'serenity.logging', 'QUIET'
+
+    // Reduce report weight: compress filenames, skip step details
+    systemProperty 'serenity.compress.filenames', 'true'
+    systemProperty 'serenity.report.show.step.details', 'false'
+
+    // JVM args for Java 17 compatibility
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+
+    // Separate JUnit HTML report directory
+    reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/testApi')
+    reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/testApi')
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+        exceptionFormat "full"
+    }
+
+    finalizedBy 'aggregateApi'
+}
+
+// ─── testUi: Runs only ROIVisualizerTest ────────────────────────────────────
+task testUi(type: Test) {
+    description = 'Run UI tests only (ROIVisualizerTest)'
+    group = 'verification'
+
+    useJUnitPlatform()
+
+    // Include ONLY the UI test
+    include '**/ROIVisualizerTest*'
+
+    // Serenity output directory — ABSOLUTE path, isolated for UI
+    systemProperty 'serenity.project.name', 'Budget App — UI Tests'
+    systemProperty 'serenity.outputDirectory', serenityUiDir
+
+    // UI needs screenshots on failure only
+    systemProperty 'serenity.take.screenshots', 'FOR_FAILURES'
+
+    // JVM args for Java 17 compatibility
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+
+    // Separate JUnit HTML report directory
+    reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/testUi')
+    reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/testUi')
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+        exceptionFormat "full"
+    }
+
+    finalizedBy 'aggregateUi'
+}
+
+// ─── Serenity Report Configuration ──────────────────────────────────────────
+serenity {
+    // Use only single-page-html (lightweight). 'navigator' generates 7000+ static
+    // files and causes the aggregate task to hang for several minutes.
+    reports = ['single-page-html']
+}
+
+// ─── Aggregate Wrappers — Redirect Serenity output per test suite ───────────
+//
+// The native 'aggregate' task's reportDirectory is set during Gradle's
+// CONFIGURATION phase. These wrappers reconfigure it at EXECUTION time
+// via a doFirst hook on the aggregate task itself.
+// ────────────────────────────────────────────────────────────────────────────
+
+task aggregateApi {
+    description = 'Generate Serenity reports for API tests'
+    group = 'Serenity BDD'
+
+    dependsOn testApi
+    finalizedBy 'aggregate'
+
+    doLast {
+        project.ext.serenityTargetDir = file('target/site/serenity-api').toPath()
+        println "\n══ Serenity will aggregate → target/site/serenity-api ══"
+    }
+}
+
+task aggregateUi {
+    description = 'Generate Serenity reports for UI tests'
+    group = 'Serenity BDD'
+
+    dependsOn testUi
+    finalizedBy 'aggregate'
+
+    doLast {
+        project.ext.serenityTargetDir = file('target/site/serenity-ui').toPath()
+        println "\n══ Serenity will aggregate → target/site/serenity-ui ══"
+    }
+}
+
+// Reconfigure aggregate's reportDirectory at execution time (before it runs)
+aggregate.doFirst {
+    if (project.ext.has('serenityTargetDir')) {
+        def targetDir = project.ext.serenityTargetDir
+        reportDirectory = targetDir
+        println "══ Serenity aggregate: reportDirectory → ${targetDir} ══"
+    }
+}
+
+// Force aggregate to always re-run (it targets different directories per test suite)
+aggregate.outputs.upToDateWhen { false }
+
+// Ensure 'aggregate' runs AFTER the wrapper tasks have set the target dir
+aggregate.mustRunAfter aggregateApi, aggregateUi
+
+// ─── Encoding ───────────────────────────────────────────────────────────────
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
