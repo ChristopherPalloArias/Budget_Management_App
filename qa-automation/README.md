@@ -20,9 +20,9 @@ El antipatrón del cono de helado sugiere automatizar masivamente a través de l
 
 La verdadera estrategia de un **Arquitecto SDET** radica en **empujar el descubrimiento de bugs hacia la base del código fuente (Unitario/API)**. En las capas inferiores, arreglar un defecto cuesta fracciones de centavo, su ejecución toma escasos milisegundos y su mantenimiento es ínfimo, maximizando exponencialmente el Retorno de Inversión y asegurando una entrega continua de calidad real.
 
-## ⚙️ Pila Tecnológica
+## ⚙️ Stack Tecnológick
 
-### Pila de QA, Backend y Automatización
+### QA, Backend y Automatización
 [![Java](https://skillicons.dev/icons?i=java)](https://www.java.com/)
 [![Spring](https://skillicons.dev/icons?i=spring)](https://spring.io/)
 [![Maven](https://skillicons.dev/icons?i=maven)](https://maven.apache.org/)
@@ -53,15 +53,6 @@ La verdadera estrategia de un **Arquitecto SDET** radica en **empujar el descubr
 | **Unitario (Base)** | JUnit 5 puro | **~7 milisegundos** | Validamos la matemática pura del dominio. ROI Altísimo. |
 | **API (Medio)** | Serenity REST | **~4 segundos** | Validamos la integración, Base de Datos y eventos asíncronos de RabbitMQ. ROI Alto. |
 | **UI (Punta)** | Serenity Screenplay | **~28 segundos** | Validamos la experiencia gráfica E2E. ROI Bajo (costoso y lento). |
-
-## 🤖 Flujo de Trabajo AI — Estrategia QA
-
-Apoyados en la filosofía de trabajo **AI-First**, nuestra arquitectura de aseguramiento de calidad distribuye las responsabilidades maximizando la eficiencia:
-
-- **Humanos = Arquitectos de Estrategia SDET:** Diseñamos la arquitectura transversal, definimos el cálculo de ROI, garantizamos la Trazabilidad vertical y tomamos decisiones de diseño estructural de alto nivel y el impacto en el negocio.
-- **IA = Ejecutor de código boilerplate (SDET Junior):** La inteligencia artificial asume el rol del andamiaje mecánico, auto-generando el código repetitivo de Screenplay, configuraciones iniciales transversales y parametrizaciones básicas.
-
-***
 
 ## 🚀 Ejecución 
 
@@ -129,8 +120,8 @@ Coronando la pirámide, se comprobará visualmente el flujo final en un navegado
 
 ---
 
-## 📸 Recursos y Evidencias
-Todos nuestros diagramas, matrices estructurales arquitectónicas y los reportes finales automatizados en HTML de Serenity residen en `/assets/`.
+## 📸 Evidencias
+Todos nuestras evidencias de Serenity residen en `/assets/`.
 
 **Unitario (Base de Dominio):**  
 ![Unit](assets/unit-test.png)
