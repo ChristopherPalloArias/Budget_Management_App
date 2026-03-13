@@ -33,7 +33,7 @@ rabbitmq:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:*}
   jwt:
     secret: ${JWT_SECRET:defaultSecretKeyForDevelopmentOnlyMustBeAtLeast256BitsLong!!}
     expiration-ms: 86400000  # 24 horas

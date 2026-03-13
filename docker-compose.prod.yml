@@ -242,6 +242,7 @@ services:
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_TAGS_APPLICATION: transaction-service
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-*}
     restart: unless-stopped
     networks:
       - finance-network
@@ -290,6 +291,7 @@ services:
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_TAGS_APPLICATION: report-service
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-*}
     restart: unless-stopped
     networks:
       - finance-network
@@ -334,6 +336,7 @@ services:
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
       MANAGEMENT_METRICS_TAGS_APPLICATION: auth-service
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-*}
     restart: unless-stopped
     networks:
       - finance-network

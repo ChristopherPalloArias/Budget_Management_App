@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "instance_type" {
   description = "The type of EC2 instance"
   type        = string
-  default     = "t3.micro"
+  default     = "c7i-flex.large"
 }
 
 variable "instance_name" {
@@ -18,7 +18,7 @@ variable "instance_name" {
 variable "ami_id" {
   description = "The AMI ID to use for the instance"
   type        = string
-  default     = "ami-0f3caa1cf4417e51b"
+  default     = "ami-02dfbd4ff395f2a1b"
 }
 
 variable "repo_url" {
